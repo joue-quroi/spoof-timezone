@@ -1,0 +1,51 @@
+{
+  "manifest_version": 2,
+  "version": "0.1.1",
+  "name": "Spoof Timezone",
+  "description": "This extension alters browser timezone to a random or user-defined value.",
+
+  "permissions": [
+    "storage",
+    "*://*/*",
+    "webNavigation",
+    "contextMenus"
+  ],
+
+  "icons": {
+    "16": "data/icons/16.png",
+    "32": "data/icons/32.png",
+    "48": "data/icons/48.png",
+    "64": "data/icons/64.png",
+    "128": "data/icons/128.png",
+    "256": "data/icons/256.png"
+  },
+
+  "browser_action":{
+    "default_icon": {
+      "16": "data/icons/16.png",
+      "32": "data/icons/32.png",
+      "48": "data/icons/48.png",
+      "64": "data/icons/64.png"
+    }
+  },
+
+  "background": {
+    "persistent": false,
+    "scripts": [
+      "webext/utils/EventEmitter.js",
+      "webext/core/base.js",
+      "webext/core/chrome.browserAction.js",
+      "webext/core/chrome.contextMenus.js",
+      "webext/core/chrome.storage.js",
+      "webext/core/chrome.webNavigation.js",
+      "webext/core/chrome.runtime.js",
+      "webext/core/chrome.tabs.js",
+      "background.js"
+    ]
+  },
+  "options_ui": {
+    "page": "data/options/index.html",
+    "chrome_style": true
+  },
+  "homepage_url": "http://add0n.com/spoof-timezone.html"
+}
