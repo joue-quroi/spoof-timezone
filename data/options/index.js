@@ -2,28 +2,26 @@
 
 var offset = document.getElementById('offset');
 
-var toOffset = value => {
-  const [en, sign, hh, mm] = /([-+])(\d+):(\d+)/.exec(value);
-  return (sign === '-' ? 1 : -1) * (Number(hh) * 60 + Number(mm));
-};
-
 offset.addEventListener('change', () => {
   const value = offset.selectedOptions[0].dataset.value;
-  document.getElementById('minutes').textContent = toOffset(value);
+  document.getElementById('minutes').value = -1 * Number(value);
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  offset.value = localStorage.getItem('location') || 'Europe/London';
-  offset.dispatchEvent(new Event('change'));
+  offset.value = localStorage.getItem('location') || 'Etc/Greenwich';
+  document.getElementById('minutes').value = localStorage.getItem('offset') || 0;
   document.getElementById('random').checked = localStorage.getItem('random') === 'true';
+  document.getElementById('update').checked = localStorage.getItem('update') === 'true';
 });
 
 document.getElementById('save').addEventListener('click', () => {
   localStorage.setItem('location', offset.value);
 
-  const value = offset.selectedOptions[0].dataset.value;
-  localStorage.setItem('offset', toOffset(value));
+  const val1 = Number(document.getElementById('minutes').value);
+  const val2 = -1 * Number(offset.selectedOptions[0].dataset.value);
+  localStorage.setItem('offset', isNaN(val1) ? val2 : val1);
   localStorage.setItem('random', document.getElementById('random').checked);
+  localStorage.setItem('update', document.getElementById('update').checked);
 
   const info = document.getElementById('info');
   info.textContent = 'Options saved';

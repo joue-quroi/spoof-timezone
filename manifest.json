@@ -8,7 +8,8 @@
     "storage",
     "*://*/*",
     "webNavigation",
-    "contextMenus"
+    "contextMenus",
+    "notifications"
   ],
 
   "icons": {
@@ -36,6 +37,7 @@
       "webext/core/base.js",
       "webext/core/chrome.browserAction.js",
       "webext/core/chrome.contextMenus.js",
+      "webext/core/chrome.notifications.js",
       "webext/core/chrome.storage.js",
       "webext/core/chrome.webNavigation.js",
       "webext/core/chrome.runtime.js",

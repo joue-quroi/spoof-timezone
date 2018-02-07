@@ -2,9 +2,10 @@
 'use strict';
 
 var onCommitted = ({tabId, frameId}) => {
-  const location = localStorage.getItem('location') || 'Europe/London';
+  const location = localStorage.getItem('location') || 'Etc/Greenwich';
 
   let offset = localStorage.getItem('offset') || 0;
+
   if (localStorage.getItem('random') === 'true') {
     offset = ['720', '660', '600', '570', '540', '480', '420', '360', '300', '240', '210', '180', '120', '60', '0',
       '-60', '-120', '-180', '-210', '-240', '-270', '-300', '-330', '-345', '-360', '-390', '-420', '-480', '-510',
@@ -101,16 +102,61 @@ webext.browserAction.on('clicked', () => webext.storage.get({
   enabled: !enabled
 })));
 
+var server = (silent = true) => {
+  const notify = message => webext.notifications.create({
+    message
+  });
+
+  console.log(11)
+  return fetch('http://ip-api.com/json').then(r => r.json()).then(j => {
+    if (j && j.timezone) {
+      return fetch('/data/offsets.json').then(r => r.json()).then(o => {
+        if (o[j.timezone]) {
+          if (localStorage.getItem('location') !== j.timezone) {
+            localStorage.setItem('location', j.timezone);
+            localStorage.setItem('offset', -1 * o[j.timezone]);
+
+            notify('Timezone is changed to ' + o[j.timezone] + ' (' + j.timezone + ')');
+
+            return j.timezone;
+          }
+          else if (silent === false) {
+            notify('Already in Timezone; ' + localStorage.getItem('offset') + ' (' + j.timezone + ')');
+          }
+        }
+        else if (silent === false) {
+          throw Error('Cannot resolve "timezone" for ' + j.timezone);
+        }
+      });
+    }
+    else if (silent === false) {
+      throw Error('Something went wrong!');
+    }
+  }).catch(e => notify(e.message));
+};
+
+webext.runtime.on('start-up', () => {
+  if (localStorage.getItem('update') === 'true') {
+    server();
+  }
+});
+
 // context=menu
-webext.runtime.on('start-up', () => webext.contextMenus.create({
+webext.runtime.on('start-up', () => webext.contextMenus.batch([{
   title: 'Check my current timezone',
   id: 'check-timezone',
   contexts: ['browser_action']
-}));
+}, {
+  title: 'Update timezone from IP',
+  id: 'update-timezone',
+  contexts: ['browser_action']
+}]));
 webext.contextMenus.on('clicked', () => webext.tabs.create({
   // url: webext.runtime.getManifest().homepage_url + '#faq1'
   url: 'http://browserspy.dk/date.php'
 })).if(({menuItemId}) => menuItemId === 'check-timezone');
+
+webext.contextMenus.on('clicked', () => server(false)).if(({menuItemId}) => menuItemId === 'update-timezone');
 
 // FAQs and Feedback
 webext.runtime.on('start-up', () => {
