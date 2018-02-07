@@ -1,7 +1,7 @@
 /* globals webext */
 'use strict';
 
-var onCommitted = ({tabId}) => {
+var onCommitted = ({tabId, frameId}) => {
   const location = localStorage.getItem('location') || 'Europe/London';
 
   let offset = localStorage.getItem('offset') || 0;
@@ -12,7 +12,8 @@ var onCommitted = ({tabId}) => {
   }
   webext.tabs.executeScript(tabId, {
     runAt: 'document_start',
-    allFrames: true,
+    frameId,
+    matchAboutBlank: true,
     code: `document.documentElement.appendChild(Object.assign(document.createElement('script'), {
       textContent: \`{
         const intl = Intl.DateTimeFormat().resolvedOptions();
@@ -73,8 +74,7 @@ var update = () => webext.storage.get({
   enabled: true
 }).then(({enabled}) => {
   if (enabled) {
-    webext.webNavigation.on('committed', onCommitted)
-      .if(({frameId, url}) => frameId === 0 && url && url.startsWith('http'));
+    webext.webNavigation.on('committed', onCommitted).if(({url}) => url && url.startsWith('http'));
   }
   else {
     webext.webNavigation.off('committed', onCommitted);
@@ -108,5 +108,41 @@ webext.runtime.on('start-up', () => webext.contextMenus.create({
   contexts: ['browser_action']
 }));
 webext.contextMenus.on('clicked', () => webext.tabs.create({
+  // url: webext.runtime.getManifest().homepage_url + '#faq1'
   url: 'http://browserspy.dk/date.php'
 })).if(({menuItemId}) => menuItemId === 'check-timezone');
+
+// FAQs and Feedback
+webext.runtime.on('start-up', () => {
+  const {name, version, homepage_url} = webext.runtime.getManifest();
+  const page = homepage_url; // eslint-disable-line camelcase
+  // FAQs
+  webext.storage.get({
+    'version': null,
+    'faqs': false,
+    'last-update': 0,
+  }).then(prefs => {
+    if (prefs.version ? (prefs.faqs && prefs.version !== version) : true) {
+      const now = Date.now();
+      const doUpdate = (now - prefs['last-update']) / 1000 / 60 / 60 / 24 > 30;
+      webext.storage.set({
+        version,
+        'last-update': doUpdate ? Date.now() : prefs['last-update']
+      }).then(() => {
+        // do not display the FAQs page if last-update occurred less than 30 days ago.
+        if (doUpdate) {
+          const p = Boolean(prefs.version);
+          webext.tabs.create({
+            url: page + '?version=' + version +
+              '&type=' + (p ? ('upgrade&p=' + prefs.version) : 'install'),
+            active: p === false
+          });
+        }
+      });
+    }
+  });
+  // Feedback
+  webext.runtime.setUninstallURL(
+    page + '?rd=feedback&name=' + name + '&version=' + version
+  );
+});
