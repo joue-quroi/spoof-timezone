@@ -8,7 +8,19 @@ offset.addEventListener('change', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  offset.value = localStorage.getItem('location') || 'Etc/Greenwich';
+  fetch('/data/offsets.json').then(r => r.json()).then(o => {
+    const f = document.createDocumentFragment();
+    Object.keys(o).sort((a, b) => o[b] - o[a]).forEach(key => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = `${key} (${-1 * o[key]})`;
+      option.dataset.value = o[key];
+      f.appendChild(option);
+    });
+    offset.appendChild(f);
+    offset.value = localStorage.getItem('location') || 'Etc/Greenwich';
+  });
+
   document.getElementById('minutes').value = localStorage.getItem('offset') || 0;
   document.getElementById('random').checked = localStorage.getItem('random') === 'true';
   document.getElementById('update').checked = localStorage.getItem('update') === 'true';
