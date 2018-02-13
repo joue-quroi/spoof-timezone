@@ -26,6 +26,7 @@ var onCommitted = ({tabId, frameId}) => {
         };
 
         const {toString, toLocaleString, toLocaleTimeString, toLocaleDateString, getTimezoneOffset} = Date.prototype;
+        const {getDate, getDay, getFullYear, getHours, getMilliseconds, getMinutes, getMonth, getSeconds, getYear} = Date.prototype;
 
         Object.defineProperty(Date.prototype, 'nd', {
           get() {
@@ -63,6 +64,34 @@ var onCommitted = ({tabId, frameId}) => {
         Date.prototype.toLocaleDateString = function() {
           return toLocaleDateString.call(this.nd);
         };
+        Date.prototype.getDate = function() {
+          return getDate.call(this.nd);
+        };
+        Date.prototype.getDay = function() {
+          return getDay.call(this.nd);
+        };
+        Date.prototype.getFullYear = function() {
+          return getFullYear.call(this.nd);
+        };
+        Date.prototype.getHours = function() {
+          return getHours.call(this.nd);
+        };
+        Date.prototype.getMilliseconds = function() {
+          return getMilliseconds.call(this.nd);
+        };
+        Date.prototype.getMinutes = function() {
+          return getMinutes.call(this.nd);
+        };
+        Date.prototype.getMonth = function() {
+          return getMonth.call(this.nd);
+        };
+        Date.prototype.getSeconds = function() {
+          return getSeconds.call(this.nd);
+        };
+        Date.prototype.getYear = function() {
+          return getYear.call(this.nd);
+        };
+
         Date.prototype.getTimezoneOffset = function() {
           return ${offset};
         }
@@ -107,11 +136,10 @@ var server = (silent = true) => {
     message
   });
 
-  console.log(11)
   return fetch('http://ip-api.com/json').then(r => r.json()).then(j => {
     if (j && j.timezone) {
       return fetch('/data/offsets.json').then(r => r.json()).then(o => {
-        if (o[j.timezone]) {
+        if (j.timezone in o) {
           if (localStorage.getItem('location') !== j.timezone) {
             localStorage.setItem('location', j.timezone);
             localStorage.setItem('offset', -1 * o[j.timezone]);
