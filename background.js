@@ -1,8 +1,10 @@
 /* globals webext */
 'use strict';
 
+var df = (new Date()).getTimezoneOffset();
+
 var onCommitted = ({tabId, frameId}) => {
-  const location = localStorage.getItem('location') || 'Etc/Greenwich';
+  const location = localStorage.getItem('location') || 'Etc/GMT';
 
   let offset = localStorage.getItem('offset') || 0;
 
@@ -16,86 +18,7 @@ var onCommitted = ({tabId, frameId}) => {
     frameId,
     matchAboutBlank: true,
     code: `document.documentElement.appendChild(Object.assign(document.createElement('script'), {
-      textContent: \`{
-        const intl = Intl.DateTimeFormat().resolvedOptions();
-
-        Intl.DateTimeFormat.prototype.resolvedOptions = function() {
-          return Object.assign(intl, {
-            timeZone: '${location}'
-          });
-        };
-
-        const {toString, toLocaleString, toLocaleTimeString, toLocaleDateString, getTimezoneOffset} = Date.prototype;
-        const {getDate, getDay, getFullYear, getHours, getMilliseconds, getMinutes, getMonth, getSeconds, getYear} = Date.prototype;
-
-        Object.defineProperty(Date.prototype, 'nd', {
-          get() {
-            if (this._nd === undefined) {
-              this._nd = new Date(
-                this.getTime() + (this.gTmznffst - ${offset}) * 60 * 1000
-              );
-            }
-            return this._nd;
-          }
-        });
-        Object.defineProperty(Date.prototype, 'gTmznffst', {
-          get() {
-            return getTimezoneOffset.call(this);
-          }
-        });
-        Date.prototype.toString = function() {
-          const z = n => (n < 10 ? '0' : '') + n;
-          const toGMT = offset => {
-            const sign = offset <= 0 ? '+' : '-';
-            offset = Math.abs(offset);
-            return sign + z(offset / 60 | 0) + z(offset % 60);
-          }
-          return toString.call(this.nd).replace(
-            toGMT(this.gTmznffst),
-            toGMT(${offset})
-          ).split('(')[0];
-        };
-        Date.prototype.toLocaleString = function() {
-          return toLocaleString.call(this.nd);
-        };
-        Date.prototype.toLocaleTimeString = function() {
-          return toLocaleTimeString.call(this.nd);
-        };
-        Date.prototype.toLocaleDateString = function() {
-          return toLocaleDateString.call(this.nd);
-        };
-        Date.prototype.getDate = function() {
-          return getDate.call(this.nd);
-        };
-        Date.prototype.getDay = function() {
-          return getDay.call(this.nd);
-        };
-        Date.prototype.getFullYear = function() {
-          return getFullYear.call(this.nd);
-        };
-        Date.prototype.getHours = function() {
-          return getHours.call(this.nd);
-        };
-        Date.prototype.getMilliseconds = function() {
-          return getMilliseconds.call(this.nd);
-        };
-        Date.prototype.getMinutes = function() {
-          return getMinutes.call(this.nd);
-        };
-        Date.prototype.getMonth = function() {
-          return getMonth.call(this.nd);
-        };
-        Date.prototype.getSeconds = function() {
-          return getSeconds.call(this.nd);
-        };
-        Date.prototype.getYear = function() {
-          return getYear.call(this.nd);
-        };
-
-        Date.prototype.getTimezoneOffset = function() {
-          return ${offset};
-        }
-      }\`
+      textContent: 'Date.prefs = ["${location}", ${offset}, ${df}];'
     }))`
   }, () => chrome.runtime.lastError);
 };

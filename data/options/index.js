@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
       f.appendChild(option);
     });
     offset.appendChild(f);
-    offset.value = localStorage.getItem('location') || 'Etc/Greenwich';
+    offset.value = localStorage.getItem('location') || 'Etc/GMT';
   });
 
   document.getElementById('minutes').value = localStorage.getItem('offset') || 0;
