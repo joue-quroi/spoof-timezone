@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "0.1.8",
+  "version": "0.2.1",
   "name": "Spoof Timezone",
   "description": "This extension alters browser timezone to a random or user-defined value.",
 
@@ -33,15 +33,10 @@
   "background": {
     "persistent": false,
     "scripts": [
-      "webext/utils/EventEmitter.js",
-      "webext/core/base.js",
-      "webext/core/chrome.browserAction.js",
-      "webext/core/chrome.contextMenus.js",
-      "webext/core/chrome.notifications.js",
-      "webext/core/chrome.storage.js",
-      "webext/core/chrome.webNavigation.js",
-      "webext/core/chrome.runtime.js",
-      "webext/core/chrome.tabs.js",
+      "moment.js",
+      "moment-timezone-with-data.js",
+      "data/offsets.js",
+      "resolve.js",
       "background.js"
     ]
   },

@@ -1,145 +1,188 @@
-/* globals webext */
+/* globals resolve, offsets */
 'use strict';
 
 var df = (new Date()).getTimezoneOffset();
 
-var onCommitted = ({tabId, frameId}) => {
-  const location = localStorage.getItem('location') || 'Etc/GMT';
+var notify = message => chrome.notifications.create({
+  type: 'basic',
+  iconUrl: 'data/icons/48.png',
+  title: chrome.runtime.getManifest().name,
+  message
+});
 
-  let offset = localStorage.getItem('offset') || 0;
+var randoms = {};
+chrome.tabs.onRemoved.addListener(tabId => delete randoms[tabId]);
 
-  if (localStorage.getItem('random') === 'true') {
-    offset = ['720', '660', '600', '570', '540', '480', '420', '360', '300', '240', '210', '180', '120', '60', '0',
-      '-60', '-120', '-180', '-210', '-240', '-270', '-300', '-330', '-345', '-360', '-390', '-420', '-480', '-510',
-      '-525', '-540', '-570', '-600', '-630', '-660', '-720', '-765', '-780', '-840'][Math.floor(Math.random() * 39)];
+var onCommitted = ({url, tabId, frameId}) => {
+  if (url && url.startsWith('http')) {
+    let location = localStorage.getItem('location');
+    const standard = localStorage.getItem('standard');
+    const daylight = localStorage.getItem('daylight');
+
+    let offset = localStorage.getItem('offset') || 0;
+    let msg = localStorage.getItem('isDST') === 'false' ? standard : daylight;
+
+    if (localStorage.getItem('random') === 'true') {
+      const ofs = Object.keys(offsets);
+      if (frameId === 0 || randoms[tabId] === undefined) {
+        location = ofs[Math.floor(Math.random() * ofs.length)];
+        randoms[tabId] = location;
+      }
+      else {
+        location = randoms[tabId];
+      }
+      const o = resolve.analyze(location);
+      offset = o.offset;
+      msg = offset !== o.offset ? o.storage.msg.daylight : o.storage.msg.standard;
+    }
+    chrome.tabs.executeScript(tabId, {
+      runAt: 'document_start',
+      frameId,
+      matchAboutBlank: true,
+      code: `document.documentElement.appendChild(Object.assign(document.createElement('script'), {
+        textContent: 'Date.prefs = ["${location}", ${-1 * offset}, ${df}, "${msg}"];'
+      })).remove();`
+    }, () => chrome.runtime.lastError);
   }
-  webext.tabs.executeScript(tabId, {
-    runAt: 'document_start',
-    frameId,
-    matchAboutBlank: true,
-    code: `document.documentElement.appendChild(Object.assign(document.createElement('script'), {
-      textContent: 'Date.prefs = ["${location}", ${offset}, ${df}];'
-    }))`
-  }, () => chrome.runtime.lastError);
 };
 
-var update = () => webext.storage.get({
+var update = () => chrome.storage.local.get({
   enabled: true
-}).then(({enabled}) => {
+}, ({enabled}) => {
   if (enabled) {
-    webext.webNavigation.on('committed', onCommitted).if(({url}) => url && url.startsWith('http'));
+    chrome.webNavigation.onCommitted.addListener(onCommitted);
   }
   else {
-    webext.webNavigation.off('committed', onCommitted);
+    chrome.webNavigation.onCommitted.removeListener(onCommitted);
   }
-  webext.browserAction.setIcon({
+  chrome.browserAction.setIcon({
     path: {
       '16': 'data/icons' + (enabled ? '' : '/disabled') + '/16.png',
       '32': 'data/icons' + (enabled ? '' : '/disabled') + '/32.png',
       '48': 'data/icons' + (enabled ? '' : '/disabled') + '/48.png',
-      '64': 'data/icons' + (enabled ? '' : '/disabled') + '/64.png',
+      '64': 'data/icons' + (enabled ? '' : '/disabled') + '/64.png'
     }
   });
-  webext.browserAction.setTitle({
-    title: webext.runtime.getManifest().name + ` (spoofing ${enabled ? 'enabled' : 'disabled'})`
+  chrome.browserAction.setTitle({
+    title: chrome.runtime.getManifest().name + ` (spoofing ${enabled ? 'enabled' : 'disabled'})`
   });
 });
-webext.storage.on('changed', update).if(p => p.enabled);
-// webext.runtime.on('start-up', update);
+chrome.storage.onChanged.addListener(prefs => {
+  if (prefs.enabled) {
+    update();
+  }
+});
 update();
 
-webext.browserAction.on('clicked', () => webext.storage.get({
+var set = (timezone = 'Etc/GMT') => {
+  const {offset, storage} = resolve.analyze(timezone);
+  localStorage.setItem('offset', offset);
+  localStorage.setItem('isDST', offset !== storage.offset);
+  localStorage.setItem('location', timezone);
+  localStorage.setItem('daylight', storage.msg.daylight);
+  localStorage.setItem('standard', storage.msg.standard);
+};
+
+// browserAction
+chrome.browserAction.onClicked.addListener(() => chrome.storage.local.get({
   enabled: true
-}).then(({enabled}) => webext.storage.set({
+}, ({enabled}) => chrome.storage.local.set({
   enabled: !enabled
 })));
 
-var server = (silent = true) => {
-  const notify = message => webext.notifications.create({
-    message
-  });
+var server = async(silent = true) => {
+  try {
+    const timezone = await resolve.remote();
 
-  return fetch('http://ip-api.com/json').then(r => r.json()).then(j => {
-    if (j && j.timezone) {
-      return fetch('/data/offsets.json').then(r => r.json()).then(o => {
-        if (j.timezone in o) {
-          if (localStorage.getItem('location') !== j.timezone) {
-            localStorage.setItem('location', j.timezone);
-            localStorage.setItem('offset', -1 * o[j.timezone]);
-
-            notify('Timezone is changed to ' + o[j.timezone] + ' (' + j.timezone + ')');
-
-            return j.timezone;
-          }
-          else if (silent === false) {
-            notify('Already in Timezone; ' + localStorage.getItem('offset') + ' (' + j.timezone + ')');
-          }
-        }
-        else if (silent === false) {
-          throw Error('Cannot resolve "timezone" for ' + j.timezone);
-        }
-      });
+    if (localStorage.getItem('location') !== timezone) {
+      set(timezone);
+      notify('Timezone is changed to ' + timezone + ' (' + localStorage.getItem('offset') + ')');
     }
     else if (silent === false) {
-      throw Error('Something went wrong!');
+      notify('Already in Timezone; ' + localStorage.getItem('offset') + ' (' + timezone + ')');
     }
-  }).catch(e => notify(e.message));
+  }
+  catch(e) {
+    if (silent === false) {
+      notify(e.message);
+    }
+  }
 };
 
-webext.runtime.on('start-up', () => {
-  if (localStorage.getItem('update') === 'true') {
-    server();
+// on installed
+chrome.runtime.onInstalled.addListener(() => {
+  set(localStorage.getItem('location') || 'Etc/GMT');
+});
+// update on startup?
+{
+  const callback = () => {
+    if (localStorage.getItem('update') === 'true') {
+      server();
+    }
+  };
+  chrome.runtime.onInstalled.addListener(callback);
+  chrome.runtime.onStartup.addListener(callback);
+}
+// context menu
+{
+  const callback = () => {
+    chrome.contextMenus.create({
+      title: 'Check my current timezone',
+      id: 'check-timezone',
+      contexts: ['browser_action']
+    });
+    chrome.contextMenus.create({
+      title: 'Update timezone from IP',
+      id: 'update-timezone',
+      contexts: ['browser_action']
+    });
+  };
+  chrome.runtime.onInstalled.addListener(callback);
+  chrome.runtime.onStartup.addListener(callback);
+}
+
+chrome.contextMenus.onClicked.addListener(({menuItemId}) => {
+  if (menuItemId === 'update-timezone') {
+    server(false);
+  }
+  else if (menuItemId === 'check-timezone') {
+    chrome.tabs.create({
+      url: 'http://browserspy.dk/date.php'
+    });
   }
 });
 
-// context=menu
-webext.runtime.on('start-up', () => webext.contextMenus.batch([{
-  title: 'Check my current timezone',
-  id: 'check-timezone',
-  contexts: ['browser_action']
-}, {
-  title: 'Update timezone from IP',
-  id: 'update-timezone',
-  contexts: ['browser_action']
-}]));
-webext.contextMenus.on('clicked', () => webext.tabs.create({
-  // url: webext.runtime.getManifest().homepage_url + '#faq1'
-  url: 'http://browserspy.dk/date.php'
-})).if(({menuItemId}) => menuItemId === 'check-timezone');
+// FAQs & Feedback
+chrome.storage.local.get({
+  'version': null,
+  'faqs': navigator.userAgent.indexOf('Firefox') === -1,
+  'last-update': 0
+}, prefs => {
+  const version = chrome.runtime.getManifest().version;
 
-webext.contextMenus.on('clicked', () => server(false)).if(({menuItemId}) => menuItemId === 'update-timezone');
-
-// FAQs and Feedback
-webext.runtime.on('start-up', () => {
-  const {name, version, homepage_url} = webext.runtime.getManifest();
-  const page = homepage_url; // eslint-disable-line camelcase
-  // FAQs
-  webext.storage.get({
-    'version': null,
-    'faqs': false,
-    'last-update': 0,
-  }).then(prefs => {
-    if (prefs.version ? (prefs.faqs && prefs.version !== version) : true) {
-      const now = Date.now();
-      const doUpdate = (now - prefs['last-update']) / 1000 / 60 / 60 / 24 > 30;
-      webext.storage.set({
-        version,
-        'last-update': doUpdate ? Date.now() : prefs['last-update']
-      }).then(() => {
-        // do not display the FAQs page if last-update occurred less than 30 days ago.
-        if (doUpdate) {
-          const p = Boolean(prefs.version);
-          webext.tabs.create({
-            url: page + '?version=' + version +
-              '&type=' + (p ? ('upgrade&p=' + prefs.version) : 'install'),
-            active: p === false
-          });
-        }
-      });
-    }
-  });
-  // Feedback
-  webext.runtime.setUninstallURL(
-    page + '?rd=feedback&name=' + name + '&version=' + version
-  );
+  if (prefs.version ? (prefs.faqs && prefs.version !== version) : true) {
+    const now = Date.now();
+    const doUpdate = (now - prefs['last-update']) / 1000 / 60 / 60 / 24 > 45;
+    chrome.storage.local.set({
+      version,
+      'last-update': doUpdate ? Date.now() : prefs['last-update']
+    }, () => {
+      // do not display the FAQs page if last-update occurred less than 45 days ago.
+      if (doUpdate) {
+        const p = Boolean(prefs.version);
+        window.setTimeout(() => chrome.tabs.create({
+          url: chrome.runtime.getManifest().homepage_url + '?version=' + version +
+            '&type=' + (p ? ('upgrade&p=' + prefs.version) : 'install'),
+          active: p === false
+        }), 3000);
+      }
+    });
+  }
 });
+
+{
+  const {name, version} = chrome.runtime.getManifest();
+  chrome.runtime.setUninstallURL(
+    chrome.runtime.getManifest().homepage_url + '?rd=feedback&name=' + name + '&version=' + version
+  );
+}

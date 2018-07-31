@@ -1,185 +1,210 @@
 'use strict';
 
-var script = document.createElement('script');
-script.textContent = `{
-  Date.prefs = Date.prefs || ['Etc/GMT', 0, (new Date()).getTimezoneOffset()];
+var prefs = `
+  Date.prefs = Date.prefs || [
+    'Etc/GMT', 0, new Date().getTimezoneOffset(), 'London Standard Time'
+  ];
+  try { // get preferences for subframes synchronously
+    Date.prefs = window.parent.Date.prefs;
+  }
+  catch (e) {}
+`;
 
-  const intl = Intl.DateTimeFormat().resolvedOptions();
-
-  Intl.DateTimeFormat.prototype.resolvedOptions = function() {
-    return Object.assign(intl, {
+var intl = `
+  const intl = Intl.DateTimeFormat.prototype.resolvedOptions;
+  Intl.DateTimeFormat.prototype.resolvedOptions = function(...args) {
+    return Object.assign(intl.apply(this, args), {
       timeZone: Date.prefs[0]
     });
   };
+`;
 
-  const toGMT = offset => {
-    const z = n => (n < 10 ? '0' : '') + n;
-    const sign = offset <= 0 ? '+' : '-';
-    offset = Math.abs(offset);
-    return sign + z(offset / 60 | 0) + z(offset % 60);
-  }
-
-  const {getTime, getDate, getDay, getFullYear, getHours, getMilliseconds, getMinutes, getMonth, getSeconds, getYear} = Date.prototype;
-  const {toDateString, toLocaleString, toString, toTimeString, toLocaleTimeString, toLocaleDateString} = Date.prototype;
-  const {setYear, setHours, setTime, setFullYear, setMilliseconds, setMinutes, setMonth, setSeconds, setDate} = Date.prototype;
-  const {setUTCDate, setUTCFullYear, setUTCHours, setUTCMilliseconds, setUTCMinutes, setUTCMonth, setUTCSeconds} = Date.prototype;
-
-  Object.defineProperty(Date.prototype, 'nd', {
-    get() {
-      if (this._nd === undefined) {
-        this._nd = new Date(
-          getTime.apply(this) + (Date.prefs[2] - Date.prefs[1]) * 60 * 1000
-        );
-      }
-      return this._nd;
+var shiftedDate = `
+  const clean = str => {
+    const toGMT = offset => {
+      const z = n => (n < 10 ? '0' : '') + n;
+      const sign = offset <= 0 ? '+' : '-';
+      offset = Math.abs(offset);
+      return sign + z(offset / 60 | 0) + z(offset % 60);
+    };
+    str = str.replace(/([T\\(])[\\+-]\\d+/g, '$1' + toGMT(Date.prefs[1]));
+    if (str.indexOf(' (') !== -1) {
+      str = str.split(' (')[0] + ' (' + Date.prefs[3] + ')';
     }
-  });
-  Date.prototype.toLocaleString = function() {
-    return toLocaleString.apply(this.nd, arguments);
-  };
-  Date.prototype.toLocaleTimeString = function() {
-    return toLocaleTimeString.apply(this.nd, arguments);
-  };
-  Date.prototype.toLocaleDateString = function() {
-    return toLocaleDateString.apply(this.nd, arguments);
-  };
-  Date.prototype.toDateString = function() {
-    return toDateString.apply(this.nd, arguments);
-  };
-  Date.prototype.toString = function() {
-    return toString.call(this.nd).replace(/([T\\(])[\\+-]\\d+/g, '$1' + toGMT(Date.prefs[1]));
-  };
-  Date.prototype.toTimeString = function() {
-    return toTimeString.call(this.nd).replace(/([T\\(])[\\+-]\\d+/g, '$1' + toGMT(Date.prefs[1]));
-  };
-  Date.prototype.getDate = function() {
-    return getDate.apply(this.nd, arguments);
-  };
-  Date.prototype.getDay = function() {
-    return getDay.apply(this.nd, arguments);
-  };
-  Date.prototype.getFullYear = function() {
-    return getFullYear.apply(this.nd, arguments);
-  };
-  Date.prototype.getHours = function() {
-    return getHours.apply(this.nd, arguments);
-  };
-  Date.prototype.getMilliseconds = function() {
-    return getMilliseconds.apply(this.nd, arguments);
-  };
-  Date.prototype.getMinutes = function() {
-    return getMinutes.apply(this.nd, arguments);
-  };
-  Date.prototype.getMonth = function() {
-    return getMonth.apply(this.nd, arguments);
-  };
-  Date.prototype.getSeconds = function() {
-    return getSeconds.apply(this.nd, arguments);
-  };
-  Date.prototype.getYear = function() {
-    return getYear.apply(this.nd, arguments);
-  };
-
-  Date.prototype.setHours = function() {
-    const a = getTime.call(this.nd);
-    const b = setHours.apply(this.nd, arguments);
-    setTime.call(this, getTime.call(this) + b - a);
-    return b;
-  };
-  Date.prototype.setFullYear = function() {
-    const a = getTime.call(this.nd);
-    const b = setFullYear.apply(this.nd, arguments);
-    setTime.call(this, getTime.call(this) + b - a);
-    return b;
-  };
-  Date.prototype.setMilliseconds = function() {
-    const a = getTime.call(this.nd);
-    const b = setMilliseconds.apply(this.nd, arguments);
-    setTime.call(this, getTime.call(this) + b - a);
-    return b;
-  };
-  Date.prototype.setMinutes = function() {
-    const a = getTime.call(this.nd);
-    const b = setMinutes.apply(this.nd, arguments);
-    setTime.call(this, getTime.call(this) + b - a);
-    return b;
-  };
-  Date.prototype.setMonth = function() {
-    const a = getTime.call(this.nd);
-    const b = setMonth.apply(this.nd, arguments);
-    setTime.call(this, getTime.call(this) + b - a);
-    return b;
-  };
-  Date.prototype.setSeconds = function() {
-    const a = getTime.call(this.nd);
-    const b = setSeconds.apply(this.nd, arguments);
-    setTime.call(this, getTime.call(this) + b - a);
-    return b;
-  };
-  Date.prototype.setDate = function() {
-    const a = getTime.call(this.nd);
-    const b = setDate.apply(this.nd, arguments);
-    setTime.call(this, getTime.call(this) + b - a);
-    return b;
-  };
-  Date.prototype.setYear = function() {
-    const a = getTime.call(this.nd);
-    const b = setYear.apply(this.nd, arguments);
-    setTime.call(this, getTime.call(this) + b - a);
-    return b;
-  };
-  Date.prototype.setTime = function() {
-    const a = getTime.call(this);
-    const b = setTime.apply(this, arguments);
-    setTime.call(this.nd, getTime.call(this.nd) + b - a);
-    return b;
-  };
-  Date.prototype.setUTCDate = function() {
-    const a = getTime.call(this);
-    const b = setUTCDate.apply(this, arguments);
-    setTime.call(this.nd, getTime.call(this.nd) + b - a);
-    return b;
-  };
-  Date.prototype.setUTCFullYear = function() {
-    const a = getTime.call(this);
-    const b = setUTCFullYear.apply(this, arguments);
-    setTime.call(this.nd, getTime.call(this.nd) + b - a);
-    return b;
-  };
-  Date.prototype.setUTCHours = function() {
-    const a = getTime.call(this);
-    const b = setUTCHours.apply(this, arguments);
-    setTime.call(this.nd, getTime.call(this.nd) + b - a);
-    return b;
-  };
-  Date.prototype.setUTCMilliseconds = function() {
-    const a = getTime.call(this);
-    const b = setUTCMilliseconds.apply(this, arguments);
-    setTime.call(this.nd, getTime.call(this.nd) + b - a);
-    return b;
-  };
-  Date.prototype.setUTCMinutes = function() {
-    const a = getTime.call(this);
-    const b = setUTCMinutes.apply(this, arguments);
-    setTime.call(this.nd, getTime.call(this.nd) + b - a);
-    return b;
-  };
-  Date.prototype.setUTCMonth = function() {
-    const a = getTime.call(this);
-    const b = setUTCMonth.apply(this, arguments);
-    setTime.call(this.nd, getTime.call(this.nd) + b - a);
-    return b;
-  };
-  Date.prototype.setUTCSeconds = function() {
-    const a = getTime.call(this);
-    const b = setUTCSeconds.apply(this, arguments);
-    setTime.call(this.nd, getTime.call(this.nd) + b - a);
-    return b;
-  };
-
-  Date.prototype.getTimezoneOffset = function() {
-    return Date.prefs[1];
+    return str;
   }
-}`;
 
+  const ODate = Date;
+  const {
+    getTime, getDate, getDay, getFullYear, getHours, getMilliseconds, getMinutes, getMonth, getSeconds, getYear,
+    toDateString, toLocaleString, toString, toTimeString, toLocaleTimeString, toLocaleDateString,
+    setYear, setHours, setTime, setFullYear, setMilliseconds, setMinutes, setMonth, setSeconds, setDate,
+    setUTCDate, setUTCFullYear, setUTCHours, setUTCMilliseconds, setUTCMinutes, setUTCMonth, setUTCSeconds
+  } = ODate.prototype;
+  class ShiftedDate extends ODate {
+    constructor(...args) {
+      super(...args);
+      this.nd = new ODate(
+        getTime.apply(this) + (Date.prefs[2] - Date.prefs[1]) * 60 * 1000
+      );
+    }
+    // get
+    toLocaleString(...args) {
+      return toLocaleString.apply(this.nd, args);
+    }
+    toLocaleTimeString(...args) {
+      return toLocaleTimeString.apply(this.nd, args);
+    }
+    toLocaleDateString(...args) {
+      return toLocaleDateString.apply(this.nd, args);
+    }
+    toDateString(...args) {
+      return toDateString.apply(this.nd, args);
+    }
+    getDate(...args) {
+      return getDate.apply(this.nd, args);
+    }
+    getDay(...args) {
+      return getDay.apply(this.nd, args);
+    }
+    getFullYear(...args) {
+      return getFullYear.apply(this.nd, args);
+    }
+    getHours(...args) {
+      return getHours.apply(this.nd, args);
+    }
+    getMilliseconds(...args) {
+      return getMilliseconds.apply(this.nd, args);
+    }
+    getMinutes(...args) {
+      return getMinutes.apply(this.nd, args);
+    }
+    getMonth(...args) {
+      return getMonth.apply(this.nd, args);
+    }
+    getSeconds(...args) {
+      return getSeconds.apply(this.nd, args);
+    }
+    getYear(...args) {
+      return getYear.apply(this.nd, args);
+    }
+    // set
+    setHours(...args) {
+      const a = getTime.call(this.nd);
+      const b = setHours.apply(this.nd, args);
+      setTime.call(this, getTime.call(this) + b - a);
+      return b;
+    }
+    setFullYear(...args) {
+      const a = getTime.call(this.nd);
+      const b = setFullYear.apply(this.nd, args);
+      setTime.call(this, getTime.call(this) + b - a);
+      return b;
+    }
+    setMilliseconds(...args) {
+      const a = getTime.call(this.nd);
+      const b = setMilliseconds.apply(this.nd, args);
+      setTime.call(this, getTime.call(this) + b - a);
+      return b;
+    }
+    setMinutes(...args) {
+      const a = getTime.call(this.nd);
+      const b = setMinutes.apply(this.nd, args);
+      setTime.call(this, getTime.call(this) + b - a);
+      return b;
+    }
+    setMonth(...args) {
+      const a = getTime.call(this.nd);
+      const b = setMonth.apply(this.nd, args);
+      setTime.call(this, getTime.call(this) + b - a);
+      return b;
+    }
+    setSeconds(...args) {
+      const a = getTime.call(this.nd);
+      const b = setSeconds.apply(this.nd, args);
+      setTime.call(this, getTime.call(this) + b - a);
+      return b;
+    }
+    setDate(...args) {
+      const a = getTime.call(this.nd);
+      const b = setDate.apply(this.nd, args);
+      setTime.call(this, getTime.call(this) + b - a);
+      return b;
+    }
+    setYear(...args) {
+      const a = getTime.call(this.nd);
+      const b = setYear.apply(this.nd, args);
+      setTime.call(this, getTime.call(this) + b - a);
+      return b;
+    }
+    setTime(...args) {
+      const a = getTime.call(this);
+      const b = setTime.apply(this, args);
+      setTime.call(this.nd, getTime.call(this.nd) + b - a);
+      return b;
+    }
+    setUTCDate(...args) {
+      const a = getTime.call(this);
+      const b = setUTCDate.apply(this, args);
+      setTime.call(this.nd, getTime.call(this.nd) + b - a);
+      return b;
+    }
+    setUTCFullYear(...args) {
+      const a = getTime.call(this);
+      const b = setUTCFullYear.apply(this, args);
+      setTime.call(this.nd, getTime.call(this.nd) + b - a);
+      return b;
+    }
+    setUTCHours(...args) {
+      const a = getTime.call(this);
+      const b = setUTCHours.apply(this, args);
+      setTime.call(this.nd, getTime.call(this.nd) + b - a);
+      return b;
+    }
+    setUTCMilliseconds(...args) {
+      const a = getTime.call(this);
+      const b = setUTCMilliseconds.apply(this, args);
+      setTime.call(this.nd, getTime.call(this.nd) + b - a);
+      return b;
+    }
+    setUTCMinutes(...args) {
+      const a = getTime.call(this);
+      const b = setUTCMinutes.apply(this, args);
+      setTime.call(this.nd, getTime.call(this.nd) + b - a);
+      return b;
+    }
+    setUTCMonth(...args) {
+      const a = getTime.call(this);
+      const b = setUTCMonth.apply(this, args);
+      setTime.call(this.nd, getTime.call(this.nd) + b - a);
+      return b;
+    }
+    setUTCSeconds(...args) {
+      const a = getTime.call(this);
+      const b = setUTCSeconds.apply(this, args);
+      setTime.call(this.nd, getTime.call(this.nd) + b - a);
+      return b;
+    }
+    // toString
+    toString(...args) {
+      return clean(toString.apply(this.nd, args));
+    }
+    toTimeString(...args) {
+      return clean(toTimeString.apply(this.nd, args));
+    }
+    // offset
+    getTimezoneOffset() {
+      return Date.prefs[1];
+    }
+  }
+`;
+
+var script = document.createElement('script');
+script.textContent = `{
+  ${prefs}
+  ${intl}
+  ${shiftedDate}
+  Date = ShiftedDate;
+}`;
 document.documentElement.appendChild(script);
+script.remove();

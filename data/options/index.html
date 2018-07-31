@@ -8,42 +8,58 @@
     body {
         min-width: 500px;
     }
+    input[type=text] {
+      width: 100%;
+      box-sizing: border-box;
+    }
     td:first-child {
       width: 500px;
     }
   </style>
   <body>
-    <table width="100%">
-      <tr>
-        <td>Select a timezone:</td>
-        <td>
-          <select id="offset"></select>
-        </td>
-      </tr>
-      <tr>
-        <td>Time zone difference from UTC (in minutes)</td>
-        <td><input type="number" id="minutes" required></td>
-      </tr>
-      <tr>
-        <td></td>
-        <td id="gmt"></td>
-      </tr>
-      <tr>
-        <td>Automatically update timezone based on my IP address</td>
-        <td><input type="checkbox" id="update"></td>
-      </tr>
-      <tr>
-        <td>Pick a random time zone</td>
-        <td><input type="checkbox" id="random"></td>
-      </tr>
-    </table>
+    <form>
 
-    <p>
-      <input type="button" value="Support Development" id="support">
-      <input type="button" value="Save" id="save">
-      <span id="info"></span>
-    </p>
+      <table width="100%">
+        <tr>
+          <td>Select a timezone:</td>
+          <td>
+            <select id="offset"></select>
+          </td>
+        </tr>
+        <tr>
+          <td>Time zone difference from UTC (in minutes) (with daylight consideration)</td>
+          <td><input type="number" id="minutes" required></td>
+        </tr>
+        <tr>
+          <td>Daylight toString message</td>
+          <td><input type="text" id="daylight" required></td>
+        </tr>
+        <tr>
+          <td>Standard toString message</td>
+          <td><input type="text" id="standard" required></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td id="gmt"></td>
+        </tr>
+        <tr>
+          <td>Automatically update timezone based on my IP address</td>
+          <td><input type="checkbox" id="update"></td>
+        </tr>
+        <tr>
+          <td>Pick a random time zone</td>
+          <td><input type="checkbox" id="random"></td>
+        </tr>
+      </table>
 
+      <p>
+        <input type="button" value="Support Development" id="support">
+        <input type="submit" value="Save">
+        <span id="info"></span>
+      </p>
+    </form>
+
+    <script src="../offsets.js"></script>
     <script src="index.js"></script>
   </body>
 </html>
