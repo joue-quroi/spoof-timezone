@@ -84,11 +84,14 @@ var set = (timezone = 'Etc/GMT') => {
 };
 
 // browserAction
-chrome.browserAction.onClicked.addListener(() => chrome.storage.local.get({
-  enabled: true
-}, ({enabled}) => chrome.storage.local.set({
-  enabled: !enabled
-})));
+// chrome.browserAction.onClicked.addListener(() => chrome.storage.local.get({
+//   enabled: true
+// }, ({enabled}) => chrome.storage.local.set({
+//   enabled: !enabled
+// })));
+chrome.browserAction.onClicked.addListener(() => {
+  notify('To disable timezone spoofing, please disable this extension and refresh the page!');
+});
 
 var server = async(silent = true) => {
   try {
