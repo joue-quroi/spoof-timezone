@@ -1,7 +1,8 @@
 /* globals offsets */
 'use strict';
 
-var offset = document.getElementById('offset');
+const offset = document.getElementById('offset');
+const toast = document.getElementById('toast');
 
 offset.addEventListener('change', () => {
   const value = offset.selectedOptions[0].value;
@@ -42,11 +43,25 @@ document.addEventListener('submit', e => {
   localStorage.setItem('random', document.getElementById('random').checked);
   localStorage.setItem('update', document.getElementById('update').checked);
 
-  const info = document.getElementById('info');
-  info.textContent = 'Options saved';
-  window.setTimeout(() => info.textContent = '', 750);
+  toast.textContent = 'Options saved';
+  window.setTimeout(() => toast.textContent = '', 750);
 });
 
 document.getElementById('support').addEventListener('click', () => chrome.tabs.create({
   url: chrome.runtime.getManifest().homepage_url + '?rd=donate'
 }));
+
+// reset
+document.getElementById('reset').addEventListener('click', e => {
+  if (e.detail === 1) {
+    toast.textContent = 'Double-click to reset!';
+    window.setTimeout(() => toast.textContent = '', 750);
+  }
+  else {
+    localStorage.clear();
+    chrome.storage.local.clear(() => {
+      chrome.runtime.reload();
+      window.close();
+    });
+  }
+});

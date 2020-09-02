@@ -1,19 +1,19 @@
 /* globals resolve, offsets */
 'use strict';
 
-var df = (new Date()).getTimezoneOffset();
+const df = (new Date()).getTimezoneOffset();
 
-var notify = message => chrome.notifications.create({
+const notify = message => chrome.notifications.create({
   type: 'basic',
   iconUrl: 'data/icons/48.png',
   title: chrome.runtime.getManifest().name,
   message
 });
 
-var randoms = {};
+const randoms = {};
 chrome.tabs.onRemoved.addListener(tabId => delete randoms[tabId]);
 
-var onCommitted = ({url, tabId, frameId}) => {
+const onCommitted = ({url, tabId, frameId}) => {
   if (url && url.startsWith('http')) {
     let location = localStorage.getItem('location');
     const standard = localStorage.getItem('standard');
@@ -46,7 +46,7 @@ var onCommitted = ({url, tabId, frameId}) => {
   }
 };
 
-var update = () => chrome.storage.local.get({
+const update = () => chrome.storage.local.get({
   enabled: true
 }, ({enabled}) => {
   if (enabled) {
@@ -74,7 +74,7 @@ chrome.storage.onChanged.addListener(prefs => {
 });
 update();
 
-var set = (timezone = 'Etc/GMT') => {
+const set = (timezone = 'Etc/GMT') => {
   const {offset, storage} = resolve.analyze(timezone);
   localStorage.setItem('offset', offset);
   localStorage.setItem('isDST', offset !== storage.offset);
@@ -91,9 +91,12 @@ var set = (timezone = 'Etc/GMT') => {
 // })));
 chrome.browserAction.onClicked.addListener(() => {
   notify('To disable timezone spoofing, please disable this extension and refresh the page!');
+  chrome.storage.local.set({
+    enabled: true
+  });
 });
 
-var server = async(silent = true) => {
+const server = async (silent = true) => {
   try {
     const timezone = await resolve.remote();
 
@@ -105,7 +108,7 @@ var server = async(silent = true) => {
       notify('Already in Timezone; ' + localStorage.getItem('offset') + ' (' + timezone + ')');
     }
   }
-  catch(e) {
+  catch (e) {
     if (silent === false) {
       notify(e.message);
     }
@@ -150,42 +153,34 @@ chrome.contextMenus.onClicked.addListener(({menuItemId}) => {
   }
   else if (menuItemId === 'check-timezone') {
     chrome.tabs.create({
-      url: 'http://browserspy.dk/date.php'
+      url: 'https://webbrowsertools.com/timezone/'
     });
   }
 });
 
-// FAQs & Feedback
-chrome.storage.local.get({
-  'version': null,
-  'faqs': navigator.userAgent.indexOf('Firefox') === -1,
-  'last-update': 0
-}, prefs => {
-  const version = chrome.runtime.getManifest().version;
-
-  if (prefs.version ? (prefs.faqs && prefs.version !== version) : true) {
-    const now = Date.now();
-    const doUpdate = (now - prefs['last-update']) / 1000 / 60 / 60 / 24 > 45;
-    chrome.storage.local.set({
-      version,
-      'last-update': doUpdate ? Date.now() : prefs['last-update']
-    }, () => {
-      // do not display the FAQs page if last-update occurred less than 45 days ago.
-      if (doUpdate) {
-        const p = Boolean(prefs.version);
-        window.setTimeout(() => chrome.tabs.create({
-          url: chrome.runtime.getManifest().homepage_url + '?version=' + version +
-            '&type=' + (p ? ('upgrade&p=' + prefs.version) : 'install'),
-          active: p === false
-        }), 3000);
-      }
-    });
-  }
-});
-
+/* FAQs & Feedback */
 {
-  const {name, version} = chrome.runtime.getManifest();
-  chrome.runtime.setUninstallURL(
-    chrome.runtime.getManifest().homepage_url + '?rd=feedback&name=' + name + '&version=' + version
-  );
+  const {management, runtime: {onInstalled, setUninstallURL, getManifest}, storage, tabs} = chrome;
+  if (navigator.webdriver !== true) {
+    const page = getManifest().homepage_url;
+    const {name, version} = getManifest();
+    onInstalled.addListener(({reason, previousVersion}) => {
+      management.getSelf(({installType}) => installType === 'normal' && storage.local.get({
+        'faqs': true,
+        'last-update': 0
+      }, prefs => {
+        if (reason === 'install' || (prefs.faqs && reason === 'update')) {
+          const doUpdate = (Date.now() - prefs['last-update']) / 1000 / 60 / 60 / 24 > 45;
+          if (doUpdate && previousVersion !== version) {
+            tabs.create({
+              url: page + '?version=' + version + (previousVersion ? '&p=' + previousVersion : '') + '&type=' + reason,
+              active: reason === 'install'
+            });
+            storage.local.set({'last-update': Date.now()});
+          }
+        }
+      }));
+    });
+    setUninstallURL(page + '?rd=feedback&name=' + encodeURIComponent(name) + '&version=' + version);
+  }
 }

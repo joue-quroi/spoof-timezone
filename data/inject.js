@@ -1,6 +1,6 @@
 'use strict';
 
-var prefs = `
+const prefs = `
   Date.prefs = Date.prefs || [
     'Etc/GMT', 0, new Date().getTimezoneOffset(), 'London Standard Time'
   ];
@@ -10,16 +10,17 @@ var prefs = `
   catch (e) {}
 `;
 
-var intl = `
-  const intl = Intl.DateTimeFormat.prototype.resolvedOptions;
-  Intl.DateTimeFormat.prototype.resolvedOptions = function(...args) {
-    return Object.assign(intl.apply(this, args), {
+const intl = `
+  const ODateTimeFormat = Intl.DateTimeFormat;
+  Intl.DateTimeFormat = function(locales, options = {}) {
+    Object.assign(options, {
       timeZone: Date.prefs[0]
     });
+    return ODateTimeFormat(locales, options);
   };
 `;
 
-var shiftedDate = `
+const shiftedDate = `
   const clean = str => {
     const toGMT = offset => {
       const z = n => (n < 10 ? '0' : '') + n;
@@ -199,7 +200,7 @@ var shiftedDate = `
   }
 `;
 
-var script = document.createElement('script');
+const script = document.createElement('script');
 script.textContent = `{
   ${prefs}
   ${intl}
