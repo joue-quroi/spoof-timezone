@@ -18,6 +18,8 @@ const intl = `
     });
     return ODateTimeFormat(locales, options);
   };
+  Intl.DateTimeFormat.prototype = Object.create(ODateTimeFormat.prototype);
+  Intl.DateTimeFormat.supportedLocalesOf = ODateTimeFormat.supportedLocalesOf;
 `;
 
 const shiftedDate = `
