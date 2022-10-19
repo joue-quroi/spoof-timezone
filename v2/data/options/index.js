@@ -1,17 +1,14 @@
-/* globals offsets */
+/* global offsets */
 'use strict';
 
 const offset = document.getElementById('offset');
 const toast = document.getElementById('toast');
 
 offset.addEventListener('change', () => {
-  const value = offset.selectedOptions[0].value;
-  chrome.runtime.getBackgroundPage(b => {
-    const {offset, storage} = b.resolve.analyze(value);
-    document.getElementById('minutes').value = offset;
-    document.getElementById('daylight').value = storage.msg.daylight || storage.msg.standard;
-    document.getElementById('standard').value = storage.msg.standard;
-  });
+  chrome.runtime.sendMessage({
+    method: 'get-offset',
+    value: offset.value
+  }, offset => document.getElementById('minutes').value = offset);
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,15 +16,19 @@ document.addEventListener('DOMContentLoaded', () => {
   Object.keys(offsets).sort((a, b) => offsets[b].offset - offsets[a].offset).forEach(key => {
     const option = document.createElement('option');
     option.value = key;
-    option.textContent = `${key} (${offsets[key].offset})`;
+
+    const of = offsets[key].offset === 0 ? 'GMT' : (
+      (offsets[key].offset > 0 ? '+' : '-') +
+      (Math.abs(offsets[key].offset) / 60).toString().split('.')[0].padStart(2, '0') + ':' +
+      (Math.abs(offsets[key].offset) % 60).toString().padStart(2, '0')
+    );
+    option.textContent = `${key} (${of})`;
     f.appendChild(option);
   });
   offset.appendChild(f);
   offset.value = localStorage.getItem('location') || 'Etc/GMT';
+  offset.dispatchEvent(new Event('change'));
 
-  document.getElementById('standard').value = localStorage.getItem('standard') || 'London Standard Time';
-  document.getElementById('daylight').value = localStorage.getItem('daylight') || 'London Daylight Time';
-  document.getElementById('minutes').value = localStorage.getItem('offset') || 0;
   document.getElementById('random').checked = localStorage.getItem('random') === 'true';
   document.getElementById('update').checked = localStorage.getItem('update') === 'true';
 });
@@ -36,12 +37,12 @@ document.addEventListener('submit', e => {
   e.preventDefault();
 
   localStorage.setItem('location', offset.value);
-
-  localStorage.setItem('offset', document.getElementById('minutes').value);
-  localStorage.setItem('daylight', document.getElementById('daylight').value);
-  localStorage.setItem('standard', document.getElementById('standard').value);
   localStorage.setItem('random', document.getElementById('random').checked);
   localStorage.setItem('update', document.getElementById('update').checked);
+
+  chrome.runtime.sendMessage({
+    method: 'update-offset'
+  });
 
   toast.textContent = 'Options saved';
   window.setTimeout(() => toast.textContent = '', 750);
