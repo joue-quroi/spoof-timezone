@@ -36,23 +36,25 @@ const shiftedDate = `{
     getTimezoneOffset() {
       return prefs.offset;
     }
-    /* to string */
+    /* to string (only supports en locale) */
     toTimeString() {
-      const a = new DateTimeFormat(navigator.language, {
+      const a = new DateTimeFormat('en', {
         timeZoneName: 'longOffset',
         timeZone: prefs.timezone
       }).formatToParts().filter(o => o.type === 'timeZoneName').shift().value.replace(':', '');
 
-      const b = new DateTimeFormat(navigator.language, {
+      const b = new DateTimeFormat('en', {
         timeZoneName: 'long',
         timeZone: prefs.timezone
       }).formatToParts().filter(o => o.type === 'timeZoneName').shift().value;
 
       return super.toTimeString.apply(this.#ad).split(' GMT')[0] + ' ' + a + ' (' + b + ')';
     }
+    /* only supports en locale */
     toDateString() {
       return super.toDateString.apply(this.#ad);
     }
+    /* only supports en locale */
     toString() {
       return this.toDateString() + ' ' + this.toTimeString();
     }
@@ -210,6 +212,8 @@ if (typeof self.prefs === 'undefined') {
     script.dispatchEvent(new Event('change'));
   });
 }
+
+console.log(self.prefs);
 
 Object.assign(script.dataset, self.prefs);
 script.textContent = `{

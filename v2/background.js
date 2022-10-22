@@ -24,7 +24,7 @@ const uo = () => {
   });
 };
 uo.engine = timeZone => {
-  const {value} = new Intl.DateTimeFormat(navigator.language, {
+  const {value} = new Intl.DateTimeFormat('en', {
     timeZoneName: 'longOffset',
     timeZone
   }).formatToParts().filter(o => o.type === 'timeZoneName').filter(o => o.type === 'timeZoneName').shift();
@@ -47,10 +47,15 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
     response(uo.engine(request.value));
   }
   else if (request.method === 'get-prefs') {
-    response({
-      offset,
-      timezone: localStorage.getItem('location') || 'Etc/GMT'
-    });
+    if (localStorage.getItem('random') === 'true' && randoms[sender.tab.id]) {
+      response(randoms[sender.tab.id]);
+    }
+    else {
+      response({
+        timezone: localStorage.getItem('location') || 'Etc/GMT',
+        offset
+      });
+    }
   }
 });
 
@@ -59,15 +64,25 @@ chrome.tabs.onRemoved.addListener(tabId => delete randoms[tabId]);
 
 const onCommitted = ({url, tabId, frameId}) => {
   if (url && url.startsWith('http')) {
-    let location = localStorage.getItem('location') || 'Etc/GMT';
+    const o = {
+      timezone: localStorage.getItem('location') || 'Etc/GMT',
+      offset
+    };
 
     if (localStorage.getItem('random') === 'true') {
       const ofs = Object.keys(offsets);
       if (frameId === 0 || randoms[tabId] === undefined) {
-        location = ofs[Math.floor(Math.random() * ofs.length)];
+        const n = ofs[Math.floor(Math.random() * ofs.length)];
+        try {
+          o.offset = uo.engine(n);
+          o.timezone = n;
+
+          randoms[tabId] = o;
+        }
+        catch (e) {}
       }
-      else {
-        location = randoms[tabId];
+      else if (randoms[tabId]) {
+        Object.assign(o, randoms[tabId]);
       }
     }
 
@@ -76,7 +91,7 @@ const onCommitted = ({url, tabId, frameId}) => {
       frameId,
       matchAboutBlank: true,
       code: `
-        self.prefs = ${JSON.stringify({offset, timezone: location})}
+        self.prefs = ${JSON.stringify(o)}
       `
     }, () => chrome.runtime.lastError);
   }
