@@ -33,10 +33,7 @@ const shiftedDate = `{
       this.#sync();
     }
     getTimezoneOffset() {
-      if (isNaN(this)) {
-        return super.getTimezoneOffset();
-      }
-      return prefs.offset;
+      return isNaN(this) ? super.getTimezoneOffset() : prefs.offset;
     }
     /* to string (only supports en locale) */
     toTimeString() {
@@ -53,10 +50,7 @@ const shiftedDate = `{
         return super.toTimeString();
       }
 
-      const a = 'GMT' + super.toLocaleString.call(this, 'en', {
-        timeZone: prefs.timezone,
-        timeZoneName: 'longOffset'
-      }).split('GMT')[1].replace(':', '');
+      const a = 'GMT' + parts[1].replace(':', '');
 
       const b = super.toLocaleString.call(this, 'en', {
         timeZone: prefs.timezone,
