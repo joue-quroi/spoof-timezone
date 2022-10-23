@@ -2,7 +2,6 @@
 
 const shiftedDate = `{
   const OriginalDate = Date;
-  const DateTimeFormat = Intl.DateTimeFormat;
 
   const updates = []; // update this.#ad of each Date object
   // prefs
@@ -38,15 +37,15 @@ const shiftedDate = `{
     }
     /* to string (only supports en locale) */
     toTimeString() {
-      const a = new DateTimeFormat('en', {
-        timeZoneName: 'longOffset',
-        timeZone: prefs.timezone
-      }).formatToParts().filter(o => o.type === 'timeZoneName').shift().value.replace(':', '');
+      const a = 'GMT' + (super.toLocaleString.call(this, 'en', {
+        timeZone: prefs.timezone,
+        timeZoneName: 'longOffset'
+      }).split('GMT')[1] || '').replace(':', '')
 
-      const b = new DateTimeFormat('en', {
-        timeZoneName: 'long',
-        timeZone: prefs.timezone
-      }).formatToParts().filter(o => o.type === 'timeZoneName').shift().value;
+      const b = super.toLocaleString.call(this, 'en', {
+        timeZone: prefs.timezone,
+        timeZoneName: 'long'
+      }).split(/(AM |PM )/i).pop();
 
       return super.toTimeString.apply(this.#ad).split(' GMT')[0] + ' ' + a + ' (' + b + ')';
     }
@@ -212,8 +211,6 @@ if (typeof self.prefs === 'undefined') {
     script.dispatchEvent(new Event('change'));
   });
 }
-
-console.log(self.prefs);
 
 Object.assign(script.dataset, self.prefs);
 script.textContent = `{

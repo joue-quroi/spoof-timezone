@@ -24,10 +24,11 @@ const uo = () => {
   });
 };
 uo.engine = timeZone => {
-  const {value} = new Intl.DateTimeFormat('en', {
-    timeZoneName: 'longOffset',
-    timeZone
-  }).formatToParts().filter(o => o.type === 'timeZoneName').filter(o => o.type === 'timeZoneName').shift();
+  const value = 'GMT' + uo.date.toLocaleString('en', {
+    timeZone,
+    timeZoneName: 'longOffset'
+  }).split('GMT')[1];
+
 
   if (value === 'GMT') {
     return 0;
@@ -35,6 +36,7 @@ uo.engine = timeZone => {
   const o = /(?<hh>[-+]\d{2}):(?<mm>\d{2})/.exec(value);
   return Number(o.groups.hh) * 60 + Number(o.groups.mm);
 };
+uo.date = new Date();
 
 chrome.runtime.onInstalled.addListener(uo);
 chrome.runtime.onStartup.addListener(uo);
