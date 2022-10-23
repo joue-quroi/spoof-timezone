@@ -33,14 +33,30 @@ const shiftedDate = `{
       this.#sync();
     }
     getTimezoneOffset() {
+      if (isNaN(this)) {
+        return super.getTimezoneOffset();
+      }
       return prefs.offset;
     }
     /* to string (only supports en locale) */
     toTimeString() {
-      const a = 'GMT' + (super.toLocaleString.call(this, 'en', {
+      if (isNaN(this)) {
+        return super.toTimeString();
+      }
+
+      const parts = super.toLocaleString.call(this, 'en', {
         timeZone: prefs.timezone,
         timeZoneName: 'longOffset'
-      }).split('GMT')[1] || '').replace(':', '')
+      }).split('GMT');
+
+      if (parts.length !== 2) {
+        return super.toTimeString();
+      }
+
+      const a = 'GMT' + super.toLocaleString.call(this, 'en', {
+        timeZone: prefs.timezone,
+        timeZoneName: 'longOffset'
+      }).split('GMT')[1].replace(':', '');
 
       const b = super.toLocaleString.call(this, 'en', {
         timeZone: prefs.timezone,
@@ -55,6 +71,9 @@ const shiftedDate = `{
     }
     /* only supports en locale */
     toString() {
+      if (isNaN(this)) {
+        return super.toString();
+      }
       return this.toDateString() + ' ' + this.toTimeString();
     }
     toLocaleDateString(...args) {
