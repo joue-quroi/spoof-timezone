@@ -2,14 +2,15 @@
 'use strict';
 
 const offset = document.getElementById('offset');
+const user = document.getElementById('user');
 const toast = document.getElementById('toast');
 
-offset.addEventListener('change', () => {
-  chrome.runtime.sendMessage({
-    method: 'get-offset',
-    value: offset.value
-  }, offset => document.getElementById('minutes').value = offset);
-});
+const update = () => chrome.runtime.sendMessage({
+  method: 'get-offset',
+  value: user.value
+}, offset => document.getElementById('minutes').value = offset);
+
+offset.addEventListener('change', update);
 
 document.addEventListener('DOMContentLoaded', () => {
   const f = document.createDocumentFragment();
@@ -26,17 +27,39 @@ document.addEventListener('DOMContentLoaded', () => {
     f.appendChild(option);
   });
   offset.appendChild(f);
-  offset.value = localStorage.getItem('location') || 'Etc/GMT';
+  offset.value = user.value = localStorage.getItem('location') || 'Etc/GMT';
   offset.dispatchEvent(new Event('change'));
 
   document.getElementById('random').checked = localStorage.getItem('random') === 'true';
   document.getElementById('update').checked = localStorage.getItem('update') === 'true';
 });
 
+offset.onchange = e => {
+  if (e.target.value) {
+    user.value = e.target.value;
+  }
+};
+
+const date = new Date();
+user.oninput = e => {
+  try {
+    date.toLocaleString('en', {
+      timeZone: e.target.value,
+      timeZoneName: 'longOffset'
+    });
+    update();
+    offset.value = user.value;
+    e.target.setCustomValidity('');
+  }
+  catch (ee) {
+    e.target.setCustomValidity('Not a valid time zone');
+  }
+};
+
 document.addEventListener('submit', e => {
   e.preventDefault();
 
-  localStorage.setItem('location', offset.value);
+  localStorage.setItem('location', user.value);
   localStorage.setItem('random', document.getElementById('random').checked);
   localStorage.setItem('update', document.getElementById('update').checked);
 

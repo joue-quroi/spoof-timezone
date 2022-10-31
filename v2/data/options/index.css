@@ -55,6 +55,11 @@ a:visited {
   white-space: normal;
   padding: 10px;
 }
+.one {
+  display: grid;
+  align-items: center;
+  grid-gap: 5px;
+}
 .two {
   display: grid;
   grid-template-columns: min-content 1fr;

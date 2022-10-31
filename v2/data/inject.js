@@ -33,7 +33,7 @@ const shiftedDate = `{
       this.#sync();
     }
     getTimezoneOffset() {
-      return isNaN(this) ? super.getTimezoneOffset() : prefs.offset;
+      return prefs.offset;
     }
     /* to string (only supports en locale) */
     toTimeString() {
@@ -190,15 +190,23 @@ const intl = `{
   const DateTimeFormat = Intl.DateTimeFormat;
   const script = document.currentScript;
 
-  Intl.DateTimeFormat = new Proxy(Intl.DateTimeFormat, {
-    apply(target, self, args) {
+  class SpoofDateTimeFormat extends Intl.DateTimeFormat {
+    constructor(...args) {
       if (!args[1]) {
         args[1] = {};
       }
       if (!args[1].timeZone) {
         args[1].timeZone = script.dataset.timezone;
       }
-      return Reflect.apply(target, self, args);
+
+      super(...args);
+    }
+  }
+  Intl.DateTimeFormat = SpoofDateTimeFormat;
+
+  Intl.DateTimeFormat = new Proxy(Intl.DateTimeFormat, {
+    apply(target, self, args) {
+      return new Intl.DateTimeFormat(...args);
     }
   });
 }`;
