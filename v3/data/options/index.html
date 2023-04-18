@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spoof timezone :: Options page</title>
+  <link rel="stylesheet" type="text/css" href="index.css">
+</head>
+<body>
+  <form>
+    <div class="two">
+      <label for="offset">Timezone</label>
+      <div class="one">
+        <select id="offset"></select>
+        <input type="text" id="user" required>
+      </div>
+      <label for="minutes">Current Offset</label>
+      <input type="number" id="minutes" required readonly>
+    </div>
+
+    <p class="two">
+      <input type="checkbox" id="update">
+      <label for="update">Automatically update timezone based on my IP address</label>
+      <input type="checkbox" id="random">
+      <label for="random">Pick a random time zone</label>
+    </p>
+
+    <div style="margin-bottom: 5px;">
+      <input type="button" value="Support Development" id="support">
+      <input type="button" value="Factory Reset" id="reset">
+    </div>
+    <div>
+      <input type="submit" value="Save Options">
+      <span id="toast"></span>
+    </div>
+  </form>
+
+  <script src="../offsets.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>

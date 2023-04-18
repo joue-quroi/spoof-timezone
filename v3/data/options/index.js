@@ -27,11 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
     f.appendChild(option);
   });
   offset.appendChild(f);
-  offset.value = user.value = localStorage.getItem('location') || 'Etc/GMT';
-  offset.dispatchEvent(new Event('change'));
-
-  document.getElementById('random').checked = localStorage.getItem('random') === 'true';
-  document.getElementById('update').checked = localStorage.getItem('update') === 'true';
+  chrome.storage.local.get({
+    timezone: 'Etc/GMT',
+    random: false,
+    update: false
+  }, prefs => {
+    offset.value = user.value = prefs.timezone;
+    offset.dispatchEvent(new Event('change'));
+    document.getElementById('random').checked = prefs.random;
+    document.getElementById('update').checked = prefs.update;
+  });
 });
 
 offset.onchange = e => {
@@ -53,23 +58,24 @@ user.oninput = e => {
     e.target.setCustomValidity('');
   }
   catch (ee) {
-    e.target.setCustomValidity('Not a valid time zone');
+    e.target.setCustomValidity('Not a valid timezone');
   }
 };
 
 document.addEventListener('submit', e => {
   e.preventDefault();
 
-  localStorage.setItem('location', user.value);
-  localStorage.setItem('random', document.getElementById('random').checked);
-  localStorage.setItem('update', document.getElementById('update').checked);
-
-  chrome.runtime.sendMessage({
-    method: 'update-offset'
+  chrome.storage.local.set({
+    timezone: user.value,
+    random: document.getElementById('random').checked,
+    update: document.getElementById('update').checked
+  }, () => {
+    chrome.runtime.sendMessage({
+      method: 'update-offset'
+    });
+    toast.textContent = 'Options saved';
+    window.setTimeout(() => toast.textContent = '', 750);
   });
-
-  toast.textContent = 'Options saved';
-  window.setTimeout(() => toast.textContent = '', 750);
 });
 
 document.getElementById('support').addEventListener('click', () => chrome.tabs.create({
@@ -84,9 +90,11 @@ document.getElementById('reset').addEventListener('click', e => {
   }
   else {
     localStorage.clear();
-    chrome.storage.local.clear(() => {
-      chrome.runtime.reload();
-      window.close();
+    chrome.storage.session.clear(() => {
+      chrome.storage.local.clear(() => {
+        chrome.runtime.reload();
+        window.close();
+      });
     });
   }
 });
