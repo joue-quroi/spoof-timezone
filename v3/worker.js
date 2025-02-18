@@ -1,43 +1,56 @@
 /* global offsets */
 
-self.importScripts('/data/offsets.js');
+if (typeof importScripts !== 'undefined') {
+  self.importScripts('/data/offsets.js');
+}
 
 const notify = message => chrome.notifications.create({
   type: 'basic',
   iconUrl: '/data/icons/48.png',
   title: chrome.runtime.getManifest().name,
   message
-});
+}, id => setTimeout(chrome.notifications.clear, 3000, id));
 
-const uo = () => new Promise(resolve => chrome.storage.local.get({
-  'timezone': 'Etc/GMT'
-}, prefs => {
-  let offset = 0;
+const once = c => {
+  const run = () => {
+    if (run.done) {
+      return;
+    }
+    run.done = true;
+    c();
+  };
+  chrome.runtime.onInstalled.addListener(run);
+  chrome.runtime.onStartup.addListener(run);
+};
+
+const uo = async () => {
+  const prefs = await chrome.storage.local.get({
+    'timezone': 'Etc/GMT'
+  });
   try {
-    offset = uo.engine(prefs.timezone);
+    prefs.offset = uo.engine(prefs.timezone);
     chrome.storage.local.set({
-      offset
+      offset: prefs.offset
     });
-    resolve({offset, timezone: prefs.timezone});
   }
   catch (e) {
     prefs.timezone = 'Etc/GMT';
     prefs.offset = 0;
-    notify(`Cannot detect offset for "${prefs.timezone}". Using 0 as offset`);
     chrome.storage.local.set(prefs);
+
+    notify(`Cannot detect offset for "${prefs.timezone}". Using 0 as offset`);
     console.error(e);
-    resolve(prefs);
   }
   chrome.action.setTitle({
     title: chrome.runtime.getManifest().name + ' (' + prefs.timezone + ')'
   });
-}));
+  return prefs;
+};
 uo.engine = timeZone => {
   const value = 'GMT' + uo.date.toLocaleString('en', {
     timeZone,
     timeZoneName: 'longOffset'
   }).split('GMT')[1];
-
 
   if (value === 'GMT') {
     return 0;
@@ -47,8 +60,7 @@ uo.engine = timeZone => {
 };
 uo.date = new Date();
 
-chrome.runtime.onInstalled.addListener(uo);
-chrome.runtime.onStartup.addListener(uo);
+once(uo);
 
 chrome.runtime.onMessage.addListener((request, sender, response) => {
   if (request.method === 'update-offset') {
@@ -63,8 +75,6 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
       timezone: 'Etc/GMT',
       offset: 0
     }, prefs => {
-      console.log(prefs);
-
       if (prefs.random) {
         const key = 'random.' + sender.tab.id;
         chrome.storage.session.get({
@@ -162,15 +172,26 @@ chrome.action.onClicked.addListener(() => {
 const server = async (silent = true) => {
   chrome.action.setIcon({
     'path': {
-      '16': 'data/icons/updating/16.png',
-      '32': 'data/icons/updating/32.png'
+      '16': '/data/icons/updating/16.png',
+      '32': '/data/icons/updating/32.png'
     }
   });
   try {
-    const r = await fetch('http://ip-api.com/json');
+    const r = await Promise.any([
+      fetch('https://ipinfo.io/json').then(r => {
+        if (r.ok) {
+          return r;
+        }
+        throw Error('Failed; [' + r.status + '] ' + r.statusText);
+      }),
+      fetch('http://ip-api.com/json').then(r => {
+        if (r.ok) {
+          return r;
+        }
+        throw Error('Failed; [' + r.status + '] ' + r.statusText);
+      })
+    ]);
     const {timezone} = await r.json();
-
-    console.log(timezone);
 
     if (!timezone) {
       throw Error('cannot resolve timezone for your IP address. Use options page to set manually');
@@ -199,42 +220,47 @@ const server = async (silent = true) => {
   }
   chrome.action.setIcon({
     'path': {
-      '16': 'data/icons/16.png',
-      '32': 'data/icons/32.png'
+      '16': '/data/icons/16.png',
+      '32': '/data/icons/32.png'
     }
   });
 };
 
 /* update on startup */
-{
-  const once = () => chrome.storage.local.get({
+once(async () => {
+  const prefs = await chrome.storage.local.get({
     update: false
-  }, prefs => {
-    if (prefs.update) {
-      server();
-    }
   });
-  chrome.runtime.onInstalled.addListener(once);
-  chrome.runtime.onStartup.addListener(once);
-}
+  if (prefs.update) {
+    server();
+  }
+});
 
 /* context menu */
-{
-  const once = () => {
+once(() => {
+  chrome.contextMenus.create({
+    title: 'Check my Current Timezone',
+    id: 'check-timezone',
+    contexts: ['action']
+  }, () => chrome.runtime.lastError);
+  chrome.contextMenus.create({
+    title: 'Update Timezone from IP',
+    id: 'update-timezone',
+    contexts: ['action']
+  }, () => chrome.runtime.lastError);
+  if (navigator.userAgent.includes('Firefox')) {
     chrome.contextMenus.create({
-      title: 'Check my Current Timezone',
-      id: 'check-timezone',
-      contexts: ['action']
+      id: 'sep',
+      contexts: ['action'],
+      type: 'separator'
     }, () => chrome.runtime.lastError);
     chrome.contextMenus.create({
-      title: 'Update Timezone from IP',
-      id: 'update-timezone',
+      title: 'Options',
+      id: 'open-options',
       contexts: ['action']
     }, () => chrome.runtime.lastError);
-  };
-  chrome.runtime.onInstalled.addListener(once);
-  chrome.runtime.onStartup.addListener(once);
-}
+  }
+});
 
 const onClicked = ({menuItemId}) => {
   if (menuItemId === 'update-timezone') {
@@ -245,6 +271,9 @@ const onClicked = ({menuItemId}) => {
       url: 'https://webbrowsertools.com/timezone/'
     });
   }
+  else if (menuItemId === 'open-options') {
+    chrome.runtime.openOptionsPage();
+  }
 };
 chrome.contextMenus.onClicked.addListener(onClicked);
 
@@ -252,9 +281,7 @@ chrome.contextMenus.onClicked.addListener(onClicked);
 {
   const {management, runtime: {onInstalled, setUninstallURL, getManifest}, storage, tabs} = chrome;
   if (navigator.webdriver !== true) {
-    const page = getManifest().homepage_url;
-    const {name, version} = getManifest();
-    const sv = (Date.now() / 60000).toFixed(0).slice(-3);
+    const {homepage_url: page, name, version} = getManifest();
     onInstalled.addListener(({reason, previousVersion}) => {
       management.getSelf(({installType}) => installType === 'normal' && storage.local.get({
         'faqs': true,
@@ -263,10 +290,11 @@ chrome.contextMenus.onClicked.addListener(onClicked);
         if (reason === 'install' || (prefs.faqs && reason === 'update')) {
           const doUpdate = (Date.now() - prefs['last-update']) / 1000 / 60 / 60 / 24 > 45;
           if (doUpdate && previousVersion !== version) {
-            tabs.create({
-              url: page + '?type=' + reason + (previousVersion ? '&p=' + previousVersion : '') + '&version=' + version + '#' + sv,
-              active: reason === 'install'
-            });
+            tabs.query({active: true, lastFocusedWindow: true}, tbs => tabs.create({
+              url: page + '?version=' + version + (previousVersion ? '&p=' + previousVersion : '') + '&type=' + reason,
+              active: reason === 'install',
+              ...(tbs && tbs.length && {index: tbs[0].index + 1})
+            }));
             storage.local.set({'last-update': Date.now()});
           }
         }

@@ -1,6 +1,8 @@
 {
-  const port = document.getElementById('stz-obhgtd');
-  port.remove();
+  const port = document.createElement('span');
+
+  port.id = 'stz-obhgtd';
+  document.documentElement.append(port);
 
   const OriginalDate = Date;
 
@@ -201,3 +203,16 @@
     }
   });
 }
+
+/* for iframe[sandbox] */
+window.addEventListener('message', e => {
+  if (e.data === 'spoof-sandbox-frame') {
+    e.stopPropagation();
+    e.preventDefault();
+    try {
+      e.source.Date = Date;
+      e.source.Intl.DateTimeFormat = Intl.DateTimeFormat;
+    }
+    catch (e) {}
+  }
+});

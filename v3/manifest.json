@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "version": "0.4.0",
+  "version": "0.4.2",
   "name": "Spoof Timezone",
-  "description": "This extension alters browser timezone to a random or user-defined value.",
-  "homepage_url": "https://webextension.org/spoof-timezone.html",
+  "description": "Change the time zone setting for web pages in the browser to a randomly selected or user-specified time zone.",
+  "homepage_url": "https://webextension.org/listing/spoof-timezone.html",
   "permissions": [
     "storage",
     "scripting",
@@ -15,34 +15,43 @@
     "*://*/*"
   ],
   "icons": {
-    "16": "data/icons/16.png",
-    "32": "data/icons/32.png",
-    "48": "data/icons/48.png",
-    "64": "data/icons/64.png",
-    "128": "data/icons/128.png",
-    "256": "data/icons/256.png",
-    "512": "data/icons/512.png"
+    "16": "/data/icons/16.png",
+    "32": "/data/icons/32.png",
+    "48": "/data/icons/48.png",
+    "64": "/data/icons/64.png",
+    "128": "/data/icons/128.png",
+    "256": "/data/icons/256.png",
+    "512": "/data/icons/512.png"
   },
   "action":{},
   "background": {
-    "service_worker": "worker.js"
+    "service_worker": "worker.js",
+    "scripts": ["/data/offsets.js", "worker.js"]
   },
   "options_ui": {
-    "page": "data/options/index.html"
+    "page": "/data/options/index.html"
   },
   "content_scripts": [{
-    "world": "ISOLATED",
-    "matches":["*://*/*"],
-    "match_about_blank": true,
-    "all_frames": true,
-    "run_at": "document_start",
-    "js": ["data/inject/isolated.js"]
-  }, {
     "world": "MAIN",
     "matches":["*://*/*"],
     "match_about_blank": true,
+    "match_origin_as_fallback": true,
     "all_frames": true,
     "run_at": "document_start",
-    "js": ["data/inject/main.js"]
-  }]
+    "js": ["/data/inject/main.js"]
+  }, {
+    "world": "ISOLATED",
+    "matches":["*://*/*"],
+    "match_about_blank": true,
+    "match_origin_as_fallback": true,
+    "all_frames": true,
+    "run_at": "document_start",
+    "js": ["/data/inject/isolated.js"]
+  }],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{55f61747-c3d3-4425-97f9-dfc19a0be23c}",
+      "strict_min_version": "128.0"
+    }
+  }
 }
