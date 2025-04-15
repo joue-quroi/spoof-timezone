@@ -1,0 +1,50 @@
+body {
+  font-size: 13px;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  width: 150px;
+  height: 250px;
+  display: grid;
+  grid-template-rows: 1fr min-content;
+  justify-content: center;
+  grid-gap: 5px;
+  background-color: #cee1ff;
+}
+button {
+  cursor: pointer;
+}
+button.power {
+  border: none;
+  background-color: transparent;
+  fill: #696969;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+button.power * {
+  pointer-events: none;
+}
+button.power:hover svg {
+  fill: #404040;
+}
+button.power.off .on {
+  display: none;
+}
+button.power.on .off {
+  display: none;
+}
+button.power.off svg {
+  fill: #c0c0c0;
+}
+button.refresh,
+a.test {
+  appearance: none;
+  text-decoration: none;
+  padding: 5px 10px;
+  color: #444;
+  background-image: linear-gradient(rgb(237, 237, 237), rgb(237, 237, 237) 38%, rgb(222, 222, 222));
+  box-shadow: rgba(0, 0, 0, 0.08) 0 1px 0, rgba(255, 255, 255, 0.75) 0 1px 2px inset;
+  text-shadow: rgb(240, 240, 240) 0 1px 0;
+  border: solid 1px rgba(0, 0, 0, 0.25);
+}

@@ -4,12 +4,16 @@ if (typeof importScripts !== 'undefined') {
   self.importScripts('/data/offsets.js');
 }
 
-const notify = message => chrome.notifications.create({
+const notify = (message, hide = true) => chrome.notifications.create({
   type: 'basic',
   iconUrl: '/data/icons/48.png',
   title: chrome.runtime.getManifest().name,
   message
-}, id => setTimeout(chrome.notifications.clear, 3000, id));
+}, id => {
+  if (hide) {
+    setTimeout(chrome.notifications.clear, 3000, id);
+  }
+});
 
 const once = c => {
   const run = () => {
@@ -22,6 +26,93 @@ const once = c => {
   chrome.runtime.onInstalled.addListener(run);
   chrome.runtime.onStartup.addListener(run);
 };
+
+const engine = {};
+engine.on = async () => {
+  try {
+    // order is important
+    await chrome.scripting.registerContentScripts([{
+      id: 'main-script',
+      world: 'MAIN',
+      matches: ['*://*/*'],
+      matchOriginAsFallback: true,
+      allFrames: true,
+      runAt: 'document_start',
+      js: ['/data/inject/main.js']
+    }]);
+    await chrome.scripting.registerContentScripts([{
+      id: 'isolated-script',
+      world: 'ISOLATED',
+      matches: ['*://*/*'],
+      matchOriginAsFallback: true,
+      allFrames: true,
+      runAt: 'document_start',
+      js: ['/data/inject/isolated.js']
+    }]);
+    chrome.action.setIcon({
+      path: {
+        '16': '/data/icons/16.png',
+        '32': '/data/icons/32.png',
+        '48': '/data/icons/48.png'
+      }
+    });
+    chrome.action.setTitle({
+      title: 'Timezone protection is ON'
+    });
+  }
+  catch (e) {
+    console.error(e);
+    notify(e.message, false);
+    chrome.action.setBadgeText({
+      text: 'E'
+    });
+    chrome.action.setTitle({
+      title: e.message
+    });
+  }
+};
+engine.off = () => {
+  chrome.scripting.unregisterContentScripts();
+  chrome.action.setIcon({
+    path: {
+      '16': '/data/icons/disabled/16.png',
+      '32': '/data/icons/disabled/32.png',
+      '48': '/data/icons/disabled/48.png'
+    }
+  });
+  chrome.action.setTitle({
+    title: 'Timezone protection is OFF'
+  });
+};
+{
+  const once = async () => {
+    if (once.done) {
+      return;
+    }
+    once.done = true;
+    const prefs = await chrome.storage.local.get({
+      active: true
+    });
+    if (prefs.active) {
+      engine.on();
+    }
+    else {
+      engine.off();
+    }
+  };
+  chrome.runtime.onStartup.addListener(once);
+  chrome.runtime.onInstalled.addListener(once);
+}
+chrome.storage.onChanged.addListener(ps => {
+  if (ps.active) {
+    if (ps.active.newValue) {
+      engine.on();
+    }
+    else {
+      engine.off();
+    }
+  }
+});
 
 const uo = async () => {
   const prefs = await chrome.storage.local.get({
@@ -152,22 +243,6 @@ const onCommitted = ({url, tabId, frameId}) => {
   }
 };
 chrome.webNavigation.onCommitted.addListener(onCommitted);
-
-chrome.action.onClicked.addListener(() => {
-  onClicked({
-    menuItemId: 'check-timezone'
-  });
-  chrome.storage.local.get({
-    msg: true
-  }, prefs => {
-    if (prefs.msg) {
-      notify('To disable timezone spoofing, please disable this extension and refresh the page!');
-      chrome.storage.local.set({
-        msg: false
-      });
-    }
-  });
-});
 
 const server = async (silent = true) => {
   chrome.action.setIcon({

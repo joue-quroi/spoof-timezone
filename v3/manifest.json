@@ -23,7 +23,9 @@
     "256": "/data/icons/256.png",
     "512": "/data/icons/512.png"
   },
-  "action":{},
+  "action":{
+    "default_popup": "/data/popup/index.html"
+  },
   "background": {
     "service_worker": "worker.js",
     "scripts": ["/data/offsets.js", "worker.js"]
@@ -31,23 +33,6 @@
   "options_ui": {
     "page": "/data/options/index.html"
   },
-  "content_scripts": [{
-    "world": "MAIN",
-    "matches":["*://*/*"],
-    "match_about_blank": true,
-    "match_origin_as_fallback": true,
-    "all_frames": true,
-    "run_at": "document_start",
-    "js": ["/data/inject/main.js"]
-  }, {
-    "world": "ISOLATED",
-    "matches":["*://*/*"],
-    "match_about_blank": true,
-    "match_origin_as_fallback": true,
-    "all_frames": true,
-    "run_at": "document_start",
-    "js": ["/data/inject/isolated.js"]
-  }],
   "browser_specific_settings": {
     "gecko": {
       "id": "{55f61747-c3d3-4425-97f9-dfc19a0be23c}",
