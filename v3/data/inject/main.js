@@ -1,8 +1,14 @@
 {
-  const port = document.createElement('span');
-
-  port.id = 'stz-obhgtd';
-  document.documentElement.append(port);
+  let port = document.getElementById('stz-obhgtd');
+  if (port) {
+    port.remove();
+    port.dispatchEvent(new Event('setup'));
+  }
+  else {
+    port = document.createElement('span');
+    port.id = 'stz-obhgtd';
+    document.documentElement.append(port);
+  }
 
   const OriginalDate = Date;
 
@@ -209,9 +215,25 @@ window.addEventListener('message', e => {
   if (e.data === 'spoof-sandbox-frame') {
     e.stopPropagation();
     e.preventDefault();
+
+    // only if it is not being overwritten
     try {
-      e.source.Date = Date;
-      e.source.Intl.DateTimeFormat = Intl.DateTimeFormat;
+      if (e.source.Date.name !== 'SpoofDate') {
+        e.source.Date = Date;
+        console.info('[Spoof Timezone]', 'Direct access is blocked, using parent element', e.source.document, Date, document);
+      }
+    }
+    catch (e) {}
+    try {
+      if (e.source.Date.name !== 'SpoofDate') {
+        e.source.Date = Date;
+      }
+    }
+    catch (e) {}
+    try {
+      if (e.source.Intl.DateTimeFormat.name !== 'SpoofDateTimeFormat') {
+        e.source.Intl.DateTimeFormat = Intl.DateTimeFormat;
+      }
     }
     catch (e) {}
   }

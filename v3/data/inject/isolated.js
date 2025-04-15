@@ -1,8 +1,13 @@
-const port = self.port = document.getElementById('stz-obhgtd');
-if (port) {
+let port;
+
+const setup = method => {
+  if (setup.done) {
+    return;
+  }
+  setup.done = true;
+
   port.dataset.timezone = 'Etc/GMT';
   port.dataset.offset = 0;
-  port.remove();
 
   // eslint-disable-next-line no-unused-vars
   self.update = reason => {
@@ -50,10 +55,24 @@ if (port) {
       self.update('updated');
     }
   });
+};
+
+port = document.getElementById('stz-obhgtd');
+if (port) {
+  port.remove();
+  setup('direct');
 }
-// main script was not successful. Let's use the parent references for this frame element
 else {
-  parent.postMessage('spoof-sandbox-frame', '*');
-  // backup plan
-  top.postMessage('spoof-sandbox-frame', '*');
+  port = document.createElement('span');
+  port.id = 'stz-obhgtd';
+  document.documentElement.append(port);
+  port.addEventListener('setup', () => setup('after'));
+
+  // what if we are in a sandboxed iframe
+  if (self.parent !== self) {
+    parent.postMessage('spoof-sandbox-frame', '*');
+    // backup plan
+    top.postMessage('spoof-sandbox-frame', '*');
+  }
 }
+self.port = port;

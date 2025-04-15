@@ -32,15 +32,6 @@ engine.on = async () => {
   try {
     // order is important
     await chrome.scripting.registerContentScripts([{
-      id: 'main-script',
-      world: 'MAIN',
-      matches: ['*://*/*'],
-      matchOriginAsFallback: true,
-      allFrames: true,
-      runAt: 'document_start',
-      js: ['/data/inject/main.js']
-    }]);
-    await chrome.scripting.registerContentScripts([{
       id: 'isolated-script',
       world: 'ISOLATED',
       matches: ['*://*/*'],
@@ -48,6 +39,15 @@ engine.on = async () => {
       allFrames: true,
       runAt: 'document_start',
       js: ['/data/inject/isolated.js']
+    }]);
+    await chrome.scripting.registerContentScripts([{
+      id: 'main-script',
+      world: 'MAIN',
+      matches: ['*://*/*'],
+      matchOriginAsFallback: true,
+      allFrames: true,
+      runAt: 'document_start',
+      js: ['/data/inject/main.js']
     }]);
     chrome.action.setIcon({
       path: {

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+</head>
+<body>
+  <span></span>
+  <script type="text/javascript">
+    document.querySelector('span').textContent = (new Date()).toString();
+  </script>
+  <iframe src="frame.html" id="one" sandbox="allow-same-origin" width="100%" height="250"></iframe>
+  <script type="text/javascript">
+    const iframe = document.getElementById('one');
+    iframe.onload = () => {
+      iframe.contentDocument.body.querySelector('span').textContent = (new iframe.contentWindow.Date()).toString();
+    }
+  </script>
+</body>
+</html>
