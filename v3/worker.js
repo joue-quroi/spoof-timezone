@@ -30,6 +30,7 @@ const once = c => {
 const engine = {};
 engine.on = async () => {
   try {
+    await chrome.scripting.unregisterContentScripts();
     // order is important
     await chrome.scripting.registerContentScripts([{
       id: 'isolated-script',
