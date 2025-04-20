@@ -4,8 +4,7 @@ body {
   background-color: #fff;
   color: #4d5156;
   width: min(100% - 2rem, 70rem);
-  margin-inline: auto;
-  margin: 10px;
+  margin: 10px auto;
 }
 select,
 button,

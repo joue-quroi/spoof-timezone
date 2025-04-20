@@ -30,12 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.local.get({
     timezone: 'Etc/GMT',
     random: false,
-    update: false
+    update: false,
+    scope: ['*://*/*']
   }, prefs => {
     offset.value = user.value = prefs.timezone;
     offset.dispatchEvent(new Event('change'));
     document.getElementById('random').checked = prefs.random;
     document.getElementById('update').checked = prefs.update;
+    document.getElementById('scope').value = prefs.scope.join(', ');
   });
 });
 
@@ -65,10 +67,16 @@ user.oninput = e => {
 document.addEventListener('submit', e => {
   e.preventDefault();
 
+  const scope = document.getElementById('scope').value.split(/\s*,\s*/).filter(a => a);
+  if (scope.length === 0) {
+    scope.push('*://*/*');
+  }
+
   chrome.storage.local.set({
     timezone: user.value,
     random: document.getElementById('random').checked,
-    update: document.getElementById('update').checked
+    update: document.getElementById('update').checked,
+    scope
   }, () => {
     chrome.runtime.sendMessage({
       method: 'update-offset'

@@ -30,12 +30,16 @@ const once = c => {
 const engine = {};
 engine.on = async () => {
   try {
+    const prefs = await chrome.storage.local.get({
+      scope: ['*://*/*']
+    });
+
     await chrome.scripting.unregisterContentScripts();
     // order is important
     await chrome.scripting.registerContentScripts([{
       id: 'isolated-script',
       world: 'ISOLATED',
-      matches: ['*://*/*'],
+      matches: prefs.scope,
       matchOriginAsFallback: true,
       allFrames: true,
       runAt: 'document_start',
@@ -44,21 +48,20 @@ engine.on = async () => {
     await chrome.scripting.registerContentScripts([{
       id: 'main-script',
       world: 'MAIN',
-      matches: ['*://*/*'],
+      matches: prefs.scope,
       matchOriginAsFallback: true,
       allFrames: true,
       runAt: 'document_start',
       js: ['/data/inject/main.js']
     }]);
-    chrome.action.setIcon({
-      path: {
-        '16': '/data/icons/16.png',
-        '32': '/data/icons/32.png',
-        '48': '/data/icons/48.png'
-      }
+    chrome.action.setBadgeText({
+      text: ''
     });
     chrome.action.setTitle({
-      title: 'Timezone protection is ON'
+      title: `Timezone protection is ON
+
+Colorful icon: Tab is protected
+Gray icon: Tab not protected (refresh to enable)`
     });
   }
   catch (e) {
@@ -74,13 +77,6 @@ engine.on = async () => {
 };
 engine.off = () => {
   chrome.scripting.unregisterContentScripts();
-  chrome.action.setIcon({
-    path: {
-      '16': '/data/icons/disabled/16.png',
-      '32': '/data/icons/disabled/32.png',
-      '48': '/data/icons/disabled/48.png'
-    }
-  });
   chrome.action.setTitle({
     title: 'Timezone protection is OFF'
   });
@@ -104,13 +100,21 @@ engine.off = () => {
   chrome.runtime.onStartup.addListener(once);
   chrome.runtime.onInstalled.addListener(once);
 }
-chrome.storage.onChanged.addListener(ps => {
+chrome.storage.onChanged.addListener(async ps => {
   if (ps.active) {
     if (ps.active.newValue) {
       engine.on();
     }
     else {
       engine.off();
+    }
+  }
+  else if (ps.scope) {
+    const prefs = await chrome.storage.local.get({
+      active: true
+    });
+    if (prefs.active) {
+      engine.on();
     }
   }
 });
@@ -185,6 +189,16 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
       }
     });
     return true;
+  }
+  else if (request.method === 'icon') {
+    chrome.action.setIcon({
+      tabId: sender.tab.id,
+      path: {
+        '16': '/data/icons/16.png',
+        '32': '/data/icons/32.png',
+        '48': '/data/icons/48.png'
+      }
+    });
   }
 });
 
