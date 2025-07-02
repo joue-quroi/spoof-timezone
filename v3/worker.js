@@ -163,7 +163,15 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
     uo();
   }
   else if (request.method === 'get-offset') {
-    response(uo.engine(request.value));
+    try {
+      response(uo.engine(request.value));
+    }
+    catch (e) {
+      console.error(e);
+      response({
+        error: e.message
+      });
+    }
   }
   else if (request.method === 'get-prefs') {
     chrome.storage.local.get({
@@ -329,7 +337,7 @@ once(async () => {
 /* context menu */
 once(() => {
   chrome.contextMenus.create({
-    title: 'Check my Current Timezone',
+    title: 'Check or Change my Timezone',
     id: 'check-timezone',
     contexts: ['action']
   }, () => chrome.runtime.lastError);

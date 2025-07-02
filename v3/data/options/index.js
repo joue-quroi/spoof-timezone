@@ -8,7 +8,14 @@ const toast = document.getElementById('toast');
 const update = () => chrome.runtime.sendMessage({
   method: 'get-offset',
   value: user.value
-}, offset => document.getElementById('minutes').value = offset);
+}, offset => {
+  if (offset.error) {
+    alert(offset.error);
+  }
+  else {
+    document.getElementById('minutes').value = offset;
+  }
+});
 
 offset.addEventListener('change', update);
 
@@ -90,6 +97,10 @@ document.getElementById('support').addEventListener('click', () => chrome.tabs.c
   url: chrome.runtime.getManifest().homepage_url + '?rd=donate'
 }));
 
+document.getElementById('map').addEventListener('click', () => chrome.tabs.create({
+  url: 'https://webbrowsertools.com/timezone/'
+}));
+
 // reset
 document.getElementById('reset').addEventListener('click', e => {
   if (e.detail === 1) {
@@ -106,3 +117,10 @@ document.getElementById('reset').addEventListener('click', e => {
     });
   }
 });
+
+// links
+for (const a of [...document.querySelectorAll('[data-href]')]) {
+  if (a.hasAttribute('href') === false) {
+    a.href = chrome.runtime.getManifest().homepage_url + '#' + a.dataset.href;
+  }
+}

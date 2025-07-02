@@ -7,6 +7,7 @@
   <link rel="stylesheet" type="text/css" href="index.css">
 </head>
 <body>
+  <p class="note">Use "<b><label for="map" style="cursor: pointer;">Configure on Map</label></b>" button to find the correct timezone on map based on your IP address</p>
   <form>
     <div class="two">
       <label for="offset">Timezone</label>
@@ -28,7 +29,7 @@
       <label for="scope">Protection Scope</label>
       <input type="text" id="scope" placeholder="Comma-separated list of hostnames: e.g.: *://*/*">
     </p>
-    <p>To reduce protection's scope, see the example of <a data-href="faq6">valid patterns</a>.</p>
+    <p>To reduce protection's scope, see the example of <a data-href="faq6" target="_blank">valid patterns</a>.</p>
 
 
     <div style="margin-bottom: 5px;">
@@ -36,6 +37,7 @@
       <input type="button" value="Factory Reset" id="reset">
     </div>
     <div>
+      <input type="button" id="map" value="Configure on Map">
       <input type="submit" value="Save Options">
       <span id="toast"></span>
     </div>

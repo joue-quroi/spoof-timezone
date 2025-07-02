@@ -82,3 +82,36 @@ if (window.top === window) {
     method: 'icon'
   });
 }
+
+
+// accept configuration from "webbrowsertools"
+if (location.href && location.href.startsWith('https://webbrowsertools.com/timezone/')) {
+  addEventListener('message', e => {
+    if (e.data && e.data.method === 'configure-timezone') {
+      setTimeout(() => top.postMessage({
+        method: 'configuration-accepted'
+      }, '*'), 750);
+      const timezone = e.data.timezone.split(/\s*,\s*/)[0];
+      if (timezone.includes('/')) {
+        chrome.runtime.sendMessage({
+          method: 'get-offset',
+          value: timezone
+        }, offset => {
+          if (offset.error) {
+            alert('Error: ' + offset.error);
+          }
+          else {
+            console.info('[using]', offset, timezone);
+            chrome.storage.local.set({
+              timezone,
+              offset
+            });
+          }
+        });
+      }
+      else {
+        alert('Cannot use: ' + timezone);
+      }
+    }
+  });
+}
