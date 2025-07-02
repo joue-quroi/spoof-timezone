@@ -31,7 +31,8 @@ const engine = {};
 engine.on = async () => {
   try {
     const prefs = await chrome.storage.local.get({
-      scope: ['*://*/*']
+      scope: ['*://*/*'],
+      whitelist: ['']
     });
 
     await chrome.scripting.unregisterContentScripts();
@@ -40,6 +41,7 @@ engine.on = async () => {
       id: 'isolated-script',
       world: 'ISOLATED',
       matches: prefs.scope,
+      excludeMatches: prefs.whitelist,
       matchOriginAsFallback: true,
       allFrames: true,
       runAt: 'document_start',
@@ -49,6 +51,7 @@ engine.on = async () => {
       id: 'main-script',
       world: 'MAIN',
       matches: prefs.scope,
+      excludeMatches: prefs.whitelist,
       matchOriginAsFallback: true,
       allFrames: true,
       runAt: 'document_start',
@@ -109,7 +112,7 @@ chrome.storage.onChanged.addListener(async ps => {
       engine.off();
     }
   }
-  else if (ps.scope) {
+  else if (ps.scope || ps.whitelist) {
     const prefs = await chrome.storage.local.get({
       active: true
     });
