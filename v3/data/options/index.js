@@ -5,6 +5,12 @@ const offset = document.getElementById('offset');
 const user = document.getElementById('user');
 const toast = document.getElementById('toast');
 
+const notify = (message, timeout = 750) => {
+  toast.textContent = message;
+  clearTimeout(notify.id);
+  notify.id = setTimeout(() => toast.textContent = '', timeout);
+};
+
 const update = () => chrome.runtime.sendMessage({
   method: 'get-offset',
   value: user.value
@@ -39,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     random: false,
     update: false,
     scope: ['*://*/*'],
-    whitelist: ['']
+    whitelist: []
   }, prefs => {
     offset.value = user.value = prefs.timezone;
     offset.dispatchEvent(new Event('change'));
@@ -73,32 +79,49 @@ user.oninput = e => {
   }
 };
 
-document.addEventListener('submit', e => {
+document.addEventListener('submit', async e => {
   e.preventDefault();
 
-  const scope = document.getElementById('scope').value.split(/\s*,\s*/).filter(a => a);
-  if (scope.length === 0) {
-    scope.push('*://*/*');
-  }
+  try {
+    const scope = document.getElementById('scope').value.split(/\s*,\s*/).filter(a => a);
+    if (scope.length === 0) {
+      scope.push('*://*/*');
+    }
 
-  const whitelist = document.getElementById('whitelist').value.split(/\s*,\s*/).filter(a => a);
-  if (whitelist.length === 0) {
-    whitelist.push('');
-  }
+    const whitelist = document.getElementById('whitelist').value.split(/\s*,\s*/).filter(a => a);
 
-  chrome.storage.local.set({
-    timezone: user.value,
-    random: document.getElementById('random').checked,
-    update: document.getElementById('update').checked,
-    scope,
-    whitelist
-  }, () => {
-    chrome.runtime.sendMessage({
-      method: 'update-offset'
+    // Test scoping
+    await chrome.scripting.unregisterContentScripts({
+      ids: ['test-script']
+    }).catch(() => {});
+    await chrome.scripting.registerContentScripts([{
+      id: 'test-script',
+      world: 'ISOLATED',
+      matches: scope,
+      excludeMatches: whitelist,
+      js: ['/data/inject/test.js']
+    }]);
+    await chrome.scripting.unregisterContentScripts({
+      ids: ['test-script']
     });
-    toast.textContent = 'Options saved';
-    window.setTimeout(() => toast.textContent = '', 750);
-  });
+
+    chrome.storage.local.set({
+      timezone: user.value,
+      random: document.getElementById('random').checked,
+      update: document.getElementById('update').checked,
+      scope,
+      whitelist
+    }, () => {
+      chrome.runtime.sendMessage({
+        method: 'update-offset'
+      });
+      notify('Options saved');
+    });
+  }
+  catch (e) {
+    console.error(e);
+    notify('Issue on "Scope" or "Whitelist" patterns - ' + e.message, 10000);
+  }
 });
 
 document.getElementById('support').addEventListener('click', () => chrome.tabs.create({
@@ -112,8 +135,7 @@ document.getElementById('map').addEventListener('click', () => chrome.tabs.creat
 // reset
 document.getElementById('reset').addEventListener('click', e => {
   if (e.detail === 1) {
-    toast.textContent = 'Double-click to reset!';
-    window.setTimeout(() => toast.textContent = '', 750);
+    notify('Double-click to reset!');
   }
   else {
     localStorage.clear();
