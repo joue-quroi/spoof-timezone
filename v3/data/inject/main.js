@@ -1,3 +1,9 @@
+/*
+  Test pages:
+    https://webbrowsertools.com/timezone/
+    https://greenwichmeantime.com/time-zone/gmt-plus-0/
+*/
+
 {
   let port = document.getElementById('stz-obhgtd');
   if (port) {
@@ -34,6 +40,7 @@
 
   class SpoofDate extends Date {
     #ad; // adjusted date
+    #fixed = false;
 
     #sync() {
       const offset = (prefs.offset + super.getTimezoneOffset());
@@ -42,6 +49,18 @@
 
     constructor(...args) {
       super(...args);
+
+      // user's specified time string does not include timezone.
+      // we need to offset it to create correct time difference from current time.
+      const str = args[0];
+      if (typeof str === 'string') {
+        if (/([+-]\d{2}:\d{2}|Z)/.test(str) === false) {
+          this.#fixed = true;
+
+          const offset = (prefs.offset + super.getTimezoneOffset());
+          this.setTime(this.getTime() - offset * 60 * 1000);
+        }
+      }
 
       prefs.updates.push(() => this.#sync());
       this.#sync();
@@ -148,6 +167,12 @@
     setMinutes(...args) {
       return this.#set('ad', 'setMinutes', args);
     }
+    setSeconds(...args) {
+      return this.#set('ad', 'setSeconds', args);
+    }
+    setMilliseconds(...args) {
+      return this.#set('ad', 'setMilliseconds', args);
+    }
     setMonth(...args) {
       return this.#set('ad', 'setMonth', args);
     }
@@ -174,6 +199,12 @@
     }
     setUTCMinutes(...args) {
       return this.#set('md', 'setUTCMinutes', args);
+    }
+    setUTCSeconds(...args) {
+      return this.#set('md', 'setUTCSeconds', args);
+    }
+    setUTCMilliseconds(...args) {
+      return this.#set('md', 'setUTCMilliseconds', args);
     }
     setUTCMonth(...args) {
       return this.#set('md', 'setUTCMonth', args);
@@ -221,12 +252,6 @@ window.addEventListener('message', e => {
       if (e.source.Date.name !== 'SpoofDate') {
         e.source.Date = Date;
         console.info('[Spoof Timezone]', 'Direct access is blocked, using parent element', e.source.document, Date, document);
-      }
-    }
-    catch (e) {}
-    try {
-      if (e.source.Date.name !== 'SpoofDate') {
-        e.source.Date = Date;
       }
     }
     catch (e) {}
