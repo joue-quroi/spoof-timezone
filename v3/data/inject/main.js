@@ -4,6 +4,29 @@
     https://greenwichmeantime.com/time-zone/gmt-plus-0/
 */
 
+
+
+(function monitorDateMethods() {
+  const originalMethods = {};
+
+  const method = 'getTimezoneOffset';
+  const original = Date.prototype[method];
+  originalMethods[method] = original;
+
+  Date.prototype[method] = function(...args) {
+    const r = original.apply(this, args);
+
+    const stack = new Error().stack;
+    if (isNaN(r)) {
+      console.log(`[Date Monitor] ${method} called with arguments:`, args, r, original);
+      console.log(this, document, stack);
+    }
+
+    return r;
+  };
+})();
+
+
 {
   let port = document.getElementById('stz-obhgtd');
   if (port) {
@@ -50,6 +73,11 @@
     constructor(...args) {
       super(...args);
 
+      // Bypass invalid dates
+      if (isNaN(this)) {
+        return new OriginalDate(...args);
+      }
+
       // user's specified time string does not include timezone.
       // we need to offset it to create correct time difference from current time.
       const str = args[0];
@@ -70,10 +98,6 @@
     }
     /* to string (only supports en locale) */
     toTimeString() {
-      if (isNaN(this)) {
-        return super.toTimeString();
-      }
-
       const parts = super.toLocaleString.call(this, 'en', {
         timeZone: prefs.timezone,
         timeZoneName: 'longOffset'
@@ -98,9 +122,6 @@
     }
     /* only supports en locale */
     toString() {
-      if (isNaN(this)) {
-        return super.toString();
-      }
       return this.toDateString() + ' ' + this.toTimeString();
     }
     toLocaleDateString(...args) {
