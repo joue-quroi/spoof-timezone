@@ -32,7 +32,7 @@ engine.on = async () => {
   try {
     const prefs = await chrome.storage.local.get({
       scope: ['*://*/*'],
-      whitelist: []
+      whitelist: ['*://challenges.cloudflare.com/*']
     });
 
     await chrome.scripting.unregisterContentScripts();

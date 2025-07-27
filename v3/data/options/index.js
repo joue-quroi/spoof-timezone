@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     random: false,
     update: false,
     scope: ['*://*/*'],
-    whitelist: []
+    whitelist: ['*://challenges.cloudflare.com/*']
   }, prefs => {
     offset.value = user.value = prefs.timezone;
     offset.dispatchEvent(new Event('change'));
