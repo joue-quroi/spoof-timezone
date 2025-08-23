@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "version": "0.4.6",
+  "version": "0.4.7",
   "name": "Spoof Timezone",
   "description": "Change the time zone setting for web pages in the browser to a randomly selected or user-specified time zone.",
   "homepage_url": "https://webextension.org/listing/spoof-timezone.html",
@@ -33,7 +33,7 @@
   },
   "background": {
     "service_worker": "worker.js",
-    "scripts": ["data/offsets.js", "worker.js"]
+    "scripts": ["worker.js"]
   },
   "options_ui": {
     "page": "data/options/index.html",

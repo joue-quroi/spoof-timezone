@@ -1,9 +1,3 @@
-/* global offsets */
-
-if (typeof importScripts !== 'undefined') {
-  self.importScripts('/data/offsets.js');
-}
-
 const notify = (message, hide = true) => chrome.notifications.create({
   type: 'basic',
   iconUrl: '/data/icons/48.png',
@@ -245,7 +239,8 @@ const onCommitted = ({url, tabId, frameId}) => {
           [key]: false
         }, ps => {
           if (frameId === 0 || !ps[key]) {
-            const ofs = Object.keys(offsets);
+            const ofs = Intl.supportedValuesOf('timeZone');
+
             const n = ofs[Math.floor(Math.random() * ofs.length)];
 
             try {

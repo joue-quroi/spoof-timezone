@@ -1,4 +1,3 @@
-/* global offsets */
 'use strict';
 
 const offset = document.getElementById('offset');
@@ -25,35 +24,64 @@ const update = () => chrome.runtime.sendMessage({
 
 offset.addEventListener('change', update);
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const f = document.createDocumentFragment();
-  Object.keys(offsets).sort((a, b) => offsets[b].offset - offsets[a].offset).forEach(key => {
-    const option = document.createElement('option');
-    option.value = key;
 
-    const of = offsets[key].offset === 0 ? 'GMT' : (
-      (offsets[key].offset > 0 ? '+' : '-') +
-      (Math.abs(offsets[key].offset) / 60).toString().split('.')[0].padStart(2, '0') + ':' +
-      (Math.abs(offsets[key].offset) % 60).toString().padStart(2, '0')
-    );
-    option.textContent = `${key} (${of})`;
-    f.appendChild(option);
-  });
-  offset.appendChild(f);
-  chrome.storage.local.get({
+  const prefs = await chrome.storage.local.get({
     timezone: 'Etc/GMT',
     random: false,
     update: false,
     scope: ['*://*/*'],
-    whitelist: ['*://challenges.cloudflare.com/*']
-  }, prefs => {
-    offset.value = user.value = prefs.timezone;
-    offset.dispatchEvent(new Event('change'));
-    document.getElementById('random').checked = prefs.random;
-    document.getElementById('update').checked = prefs.update;
-    document.getElementById('scope').value = prefs.scope.join(', ');
-    document.getElementById('whitelist').value = prefs.whitelist.join(', ');
+    whitelist: ['*://challenges.cloudflare.com/*'],
+    famousTimeZones: [
+      'Etc/GMT',
+      'America/New_York',
+      'America/Los_Angeles',
+      'Europe/London',
+      'Europe/Paris',
+      'Asia/Dubai',
+      'Asia/Kolkata',
+      'Asia/Shanghai',
+      'Asia/Tokyo',
+      'Australia/Sydney',
+      'Pacific/Auckland'
+    ]
   });
+
+  const date = new Date();
+  const opt = timeZone => {
+    const dtf = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      timeZoneName: 'shortOffset'
+    });
+    const parts = dtf.formatToParts(date);
+    const value = parts.find(p => p.type === 'timeZoneName').value;
+
+    const option = document.createElement('option');
+    option.value = timeZone;
+    option.textContent = `${timeZone} (${value})`;
+    f.appendChild(option);
+  };
+
+  for (const timeZone of prefs.famousTimeZones) {
+    opt(timeZone);
+  }
+  const hr = document.createElement('hr');
+  f.appendChild(hr);
+
+  for (const timeZone of Intl.supportedValuesOf('timeZone')) {
+    if (prefs.famousTimeZones.includes(timeZone) === false) {
+      opt(timeZone);
+    }
+  }
+  offset.appendChild(f);
+
+  offset.value = user.value = prefs.timezone;
+  offset.dispatchEvent(new Event('change'));
+  document.getElementById('random').checked = prefs.random;
+  document.getElementById('update').checked = prefs.update;
+  document.getElementById('scope').value = prefs.scope.join(', ');
+  document.getElementById('whitelist').value = prefs.whitelist.join(', ');
 });
 
 offset.onchange = e => {
