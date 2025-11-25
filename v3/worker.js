@@ -276,18 +276,24 @@ const server = async (silent = true) => {
     const r = await Promise.any([
       fetch('https://ipinfo.io/json').then(r => {
         if (r.ok) {
-          return r;
+          return r.json();
         }
         throw Error('Failed; [' + r.status + '] ' + r.statusText);
       }),
       fetch('http://ip-api.com/json').then(r => {
         if (r.ok) {
-          return r;
+          return r.json();
+        }
+        throw Error('Failed; [' + r.status + '] ' + r.statusText);
+      }),
+      fetch('https://ipapi.co/timezone/').then(r => {
+        if (r.ok) {
+          return r.text().then(timezone => ({timezone}));
         }
         throw Error('Failed; [' + r.status + '] ' + r.statusText);
       })
     ]);
-    const {timezone} = await r.json();
+    const {timezone} = r;
 
     if (!timezone) {
       throw Error('cannot resolve timezone for your IP address. Use options page to set manually');
@@ -311,7 +317,7 @@ const server = async (silent = true) => {
   catch (e) {
     if (silent === false) {
       console.warn(e);
-      notify(e.message);
+      notify(e.errors ? e.errors.map(e => e.message).join('\n') : e.message);
     }
   }
   chrome.action.setIcon({
