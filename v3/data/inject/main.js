@@ -2,6 +2,7 @@
   Test pages:
     https://webbrowsertools.com/timezone/
     https://greenwichmeantime.com/time-zone/gmt-plus-0/
+    https://demo.immich.app/photos -> if new Date is not correct, album is not being loaded
 */
 
 {
@@ -36,8 +37,21 @@
   });
   port.addEventListener('change', () => prefs.updates.forEach(c => c()));
 
-  /* Date Spoofing */
+  const isUTCParsedString = str => {
+    // ISO date-only: YYYY-MM-DD  → always UTC
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return true;
 
+    // ISO string with explicit Z suffix → UTC
+    if (/Z$/i.test(str)) return true;
+
+    // ISO string with explicit timezone offset → UTC-based
+    if (/[+-]\d{2}:\d{2}$/.test(str)) return true;
+
+    // Otherwise, JS treats as local time
+    return false;
+  };
+
+  /* Date Spoofing */
   class SpoofDate extends Date {
     #ad; // adjusted date
     #fixed = false;
@@ -59,7 +73,7 @@
       if (isNaN(this) === false) {
         const str = args[0];
         if (typeof str === 'string') {
-          if (/([+-]\d{2}:\d{2}|Z)/.test(str) === false) {
+          if (isUTCParsedString(str) === false) {
             this.#fixed = true;
 
             const offset = (prefs.offset + super.getTimezoneOffset());
@@ -75,7 +89,7 @@
       if (isNaN(this)) {
         return super.getTimezoneOffset();
       }
-      return prefs.offset;
+      return -1 * prefs.offset;
     }
     /* to string (only supports en locale) */
     toTimeString() {

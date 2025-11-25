@@ -32,17 +32,10 @@
     }
   },
   "background": {
-    "service_worker": "worker.js",
-    "scripts": ["worker.js"]
+    "service_worker": "worker.js"
   },
   "options_ui": {
     "page": "data/options/index.html",
     "open_in_tab": true
-  },
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "{55f61747-c3d3-4425-97f9-dfc19a0be23c}",
-      "strict_min_version": "128.0"
-    }
   }
 }
