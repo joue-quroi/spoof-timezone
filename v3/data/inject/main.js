@@ -37,18 +37,35 @@
   });
   port.addEventListener('change', () => prefs.updates.forEach(c => c()));
 
-  const isUTCParsedString = str => {
-    // ISO date-only: YYYY-MM-DD  → always UTC
-    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return true;
+  // ISO date-time with Z or offset → UTC
+  const isoDatetimeWithOffset = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?([.,]\d+)?([Zz]|[+-]\d{2}:?\d{2})$/;
+  // ISO date-only → UTC
+  const isoDateOnly = /^\d{4}-\d{2}-\d{2}$/;
+  const isLocalDateArgs = args => {
+    if (args.length === 0) {
+      return false;
+    }
+    if (args.length === 1) {
+      const arg = args[0];
 
-    // ISO string with explicit Z suffix → UTC
-    if (/Z$/i.test(str)) return true;
+      // already Date object → local interpretation irrelevant
+      if (arg instanceof Date) {
+        return false;
+      }
+      if (typeof arg === 'number') {
+        // milliseconds timestamp
+        return false;
+      }
+      if (typeof arg === 'string') {
+        const s = arg.trim();
 
-    // ISO string with explicit timezone offset → UTC-based
-    if (/[+-]\d{2}:\d{2}$/.test(str)) return true;
-
-    // Otherwise, JS treats as local time
-    return false;
+        if (isoDatetimeWithOffset.test(s) || isoDateOnly.test(s)) return false;
+        return true; // everything else (non-ISO string) → local
+      }
+      return false; // other types → unlikely
+    }
+    // Multiple numeric arguments → always local
+    return true;
   };
 
   /* Date Spoofing */
@@ -68,17 +85,15 @@
 
     constructor(...args) {
       super(...args);
+
       // user's specified time string does not include timezone.
       // we need to offset it to create correct time difference from current time.
       if (isNaN(this) === false) {
-        const str = args[0];
-        if (typeof str === 'string') {
-          if (isUTCParsedString(str) === false) {
-            this.#fixed = true;
+        if (isLocalDateArgs(args)) {
+          this.#fixed = true;
 
-            const offset = (prefs.offset + super.getTimezoneOffset());
-            this.setTime(this.getTime() - offset * 60 * 1000);
-          }
+          const offset = (prefs.offset + super.getTimezoneOffset());
+          this.setTime(this.getTime() - offset * 60 * 1000);
         }
       }
 
