@@ -1,13 +1,14 @@
-const notify = (message, hide = true) => chrome.notifications.create({
-  type: 'basic',
-  iconUrl: '/data/icons/48.png',
-  title: chrome.runtime.getManifest().name,
-  message
-}, id => {
+const notify = async (message, hide = true) => {
+  const id = await chrome.notifications.create({
+    type: 'basic',
+    iconUrl: '/data/icons/48.png',
+    title: chrome.runtime.getManifest().name,
+    message
+  });
   if (hide) {
-    setTimeout(chrome.notifications.clear, 3000, id);
+    setTimeout(chrome.notifications.clear, 5000, id);
   }
-});
+};
 
 const once = c => {
   const run = () => {

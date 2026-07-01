@@ -1,3 +1,7 @@
+:root {
+  color-scheme: light dark;
+}
+
 body {
   font-size: 13px;
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
@@ -7,44 +11,62 @@ body {
   grid-template-rows: 1fr min-content;
   justify-content: center;
   grid-gap: 5px;
-  background-color: #cee1ff;
+  color: light-dark(#1f1f1f, #e6e8f0);
+  background-color: light-dark(#fff, #22242a);
 }
 button {
   cursor: pointer;
+
+  &.power {
+    border: none;
+    background-color: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    * {
+      pointer-events: none;
+    }
+    svg {
+      opacity: 0.8;
+    }
+    &:hover svg {
+      opacity: 1;
+    }
+    &.off {
+      fill: light-dark(#ff2727, #ff8852);
+
+      .on {
+        display: none;
+      }
+    }
+    &.on {
+      fill: light-dark(#1f1f1f, #e6e8f0);
+
+      .off {
+        display: none;
+      }
+    }
+  }
 }
-button.power {
-  border: none;
-  background-color: transparent;
-  fill: #696969;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-button.power * {
-  pointer-events: none;
-}
-button.power:hover svg {
-  fill: #404040;
-}
-button.power.off .on {
-  display: none;
-}
-button.power.on .off {
-  display: none;
-}
-button.power.off svg {
-  fill: #c0c0c0;
-}
+
 button.refresh,
 a.test {
   appearance: none;
   text-decoration: none;
   padding: 5px 10px;
-  color: #444;
-  background-image: linear-gradient(rgb(237, 237, 237), rgb(237, 237, 237) 38%, rgb(222, 222, 222));
-  box-shadow: rgba(0, 0, 0, 0.08) 0 1px 0, rgba(255, 255, 255, 0.75) 0 1px 2px inset;
-  text-shadow: rgb(240, 240, 240) 0 1px 0;
-  border: solid 1px rgba(0, 0, 0, 0.25);
+  color: light-dark(#444, #e6e6e6);
+  background-image: linear-gradient(
+    light-dark(rgb(237, 237, 237), rgb(72, 72, 72)),
+    light-dark(rgb(237, 237, 237), rgb(72, 72, 72)) 38%,
+    light-dark(rgb(222, 222, 222), rgb(56, 56, 56))
+  );
+  box-shadow:
+    light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.5)) 0 1px 0,
+    light-dark(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.08)) 0 1px 2px inset;
+  text-shadow:
+    light-dark(rgb(240, 240, 240), rgba(0, 0, 0, 0.6)) 0 1px 0;
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0.18));
 }

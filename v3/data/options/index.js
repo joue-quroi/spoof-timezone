@@ -156,6 +156,7 @@ document.getElementById('support').addEventListener('click', () => chrome.tabs.c
   url: chrome.runtime.getManifest().homepage_url + '?rd=donate'
 }));
 
+// select on map
 document.getElementById('map').addEventListener('click', () => chrome.tabs.create({
   url: 'https://webbrowsertools.com/timezone/'
 }));
